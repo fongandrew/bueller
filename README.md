@@ -84,11 +84,49 @@ Here is a summary of the work I have done:
 ## CLI Options
 
 ```bash
-./bueller.js --issues-dir ./my-issues --max-iterations 50
+./bueller.js --issues-dir ./my-issues --max-iterations 50 --git-commit
 ```
 
 - `--issues-dir <path>`: Issues directory (default: `./issues`)
 - `--max-iterations <number>`: Maximum iterations (default: `100`)
+- `--git-commit`: Enable automatic git commits when issues are completed (default: disabled)
+
+### Git Auto-Commit
+
+When `--git-commit` is enabled, Bueller will automatically create a git commit whenever an issue is successfully completed (moved from `open/` to `review/`).
+
+The commit message format is:
+```
+[p0-002] Auto-commit after completing issue
+
+🤖 Generated with Bueller
+```
+
+The issue ID is extracted from the filename (e.g., `p0-002-git.md` → `p0-002`) and included in the commit message for easy tracking.
+
+**Notes:**
+- Only triggers when an issue is moved to `review/` (completed)
+- Automatically stages all changes (`git add -A`)
+- Skips commit if there are no changes to commit
+- Does not commit when issues are moved to `stuck/` or when decomposed
+
+## Testing
+
+Bueller includes an end-to-end test framework to verify behavior:
+
+```bash
+# Run all tests
+npm test
+
+# Run a specific test
+./tests/run-test.sh simple-task
+```
+
+Tests are located in `tests/fixtures/` and consist of:
+- Pre-configured issue directories with markdown files
+- Verification scripts to check outcomes
+
+See [tests/README.md](tests/README.md) for more details on creating new test cases.
 
 ## Notes
 
