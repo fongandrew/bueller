@@ -19,20 +19,13 @@ if (result.timedOut) {
 }
 
 // Check that the issue was moved to review
-assertFileExists(
-	'issues/review/p1-001-counting.md',
-	'FAIL: Issue not moved to review',
-);
+assertFileExists('issues/review/p1-001-counting.md', 'FAIL: Issue not moved to review');
 
 // Check that all three files were created
 for (let i = 1; i <= 3; i++) {
 	const filename = `count${i}.txt`;
 	assertFileExists(filename, `FAIL: ${filename} was not created`);
-	assertFileContains(
-		filename,
-		`${i}`,
-		`FAIL: ${filename} does not contain '${i}'`,
-	);
+	assertFileContains(filename, `${i}`, `FAIL: ${filename} does not contain '${i}'`);
 }
 
 // Check that there are multiple @claude responses (multi-iteration)

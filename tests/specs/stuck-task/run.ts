@@ -19,16 +19,10 @@ if (result.timedOut) {
 }
 
 // Check that the issue was moved to stuck
-assertFileExists(
-	'issues/stuck/p1-001-impossible.md',
-	'FAIL: Issue not moved to stuck directory',
-);
+assertFileExists('issues/stuck/p1-001-impossible.md', 'FAIL: Issue not moved to stuck directory');
 
 // Check that the issue is not in open
-assertFileNotExists(
-	'issues/open/p1-001-impossible.md',
-	'FAIL: Issue still in open directory',
-);
+assertFileNotExists('issues/open/p1-001-impossible.md', 'FAIL: Issue still in open directory');
 
 // Check that there's a @claude response explaining why it's stuck
 assertFileContains(

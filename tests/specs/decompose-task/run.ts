@@ -20,10 +20,7 @@ if (result.timedOut) {
 }
 
 // Check that the parent issue was moved to review
-assertFileExists(
-	'issues/review/p1-001-complex.md',
-	'FAIL: Parent issue not moved to review',
-);
+assertFileExists('issues/review/p1-001-complex.md', 'FAIL: Parent issue not moved to review');
 
 // Check that child issues were created (they might be in open or review)
 let childCount = 0;
@@ -38,11 +35,7 @@ for (const suffix of suffixes) {
 	}
 }
 
-assertCountAtLeast(
-	childCount,
-	3,
-	`FAIL: Expected 3 child issues, found ${childCount}`,
-);
+assertCountAtLeast(childCount, 3, `FAIL: Expected 3 child issues, found ${childCount}`);
 
 // Check that the parent issue has a @claude response mentioning decomposition
 assertFileMatches(

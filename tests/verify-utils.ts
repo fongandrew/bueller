@@ -37,7 +37,14 @@ export async function runBueller(options: RunBuellerOptions = {}): Promise<{
 		additionalArgs = [],
 	} = options;
 
-	const args = ['../bueller.js', '--issues-dir', issuesDir, '--max-iterations', String(maxIterations), ...additionalArgs];
+	const args = [
+		'../bueller.js',
+		'--issues-dir',
+		issuesDir,
+		'--max-iterations',
+		String(maxIterations),
+		...additionalArgs,
+	];
 
 	return new Promise((resolve) => {
 		const output: string[] = [];

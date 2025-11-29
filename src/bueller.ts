@@ -219,11 +219,7 @@ function loadOrCreatePromptTemplate(promptFile: string): string {
 	return defaultTemplate;
 }
 
-function buildSystemPrompt(
-	template: string,
-	issuesDir: string,
-	issueFile: string,
-): string {
+function buildSystemPrompt(template: string, issuesDir: string, issueFile: string): string {
 	const issueFilePath = path.join(issuesDir, ISSUE_DIR_OPEN, issueFile);
 
 	// Replace template variables with actual values
@@ -311,11 +307,7 @@ function logSDKMessage(item: SDKMessage): void {
 	}
 }
 
-async function runAgent(
-	template: string,
-	issuesDir: string,
-	issueFile: string,
-): Promise<void> {
+async function runAgent(template: string, issuesDir: string, issueFile: string): Promise<void> {
 	const systemPrompt = buildSystemPrompt(template, issuesDir, issueFile);
 
 	console.log('\n--- Starting agent ---');
