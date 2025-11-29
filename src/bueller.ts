@@ -205,10 +205,26 @@ function logToolUse(block: BetaToolUseBlock | ToolUseBlockParam): void {
 			process.stdout.write(`${(block.input as any)?.pattern}`);
 			break;
 		case 'todowrite': {
-			const todos = (block.input as any)?.todos;
-			process.stdout.write(
-				todos.map((t: any) => `${String(t.content)} (${String(t.status)})`).join(', '),
-			);
+			for (const todo of (block.input as any)?.todos ?? []) {
+				process.stdout.write('\n');
+				switch (todo.status) {
+					case 'in_progress':
+						process.stdout.write('⧖');
+						break;
+					case 'pending':
+						process.stdout.write('☐');
+						break;
+					case 'compeleted':
+						process.stdout.write('✓');
+						break;
+					default:
+						process.stdout.write(todo.status);
+						break;
+				}
+				process.stdout.write(String(todo.status));
+				process.stdout.write(' ');
+				process.stdout.write(String(todo.content));
+			}
 			break;
 		}
 		default:
