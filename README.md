@@ -164,7 +164,7 @@ Bueller includes an end-to-end test framework to verify behavior:
 
 ```bash
 # Run all tests
-npm test
+pnpm test
 
 # Run a specific test
 ./tests/run-test.sh simple-task
