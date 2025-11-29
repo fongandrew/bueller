@@ -110,13 +110,10 @@ function getDefaultPromptTemplate(): string {
 
 ## Your Environment
 
-Issues directory:
 - [ISSUES_DIR]/[ISSUE_DIR_OPEN]/     - Issues to be processed
 - [ISSUES_DIR]/[ISSUE_DIR_REVIEW]/   - Completed issues
 - [ISSUES_DIR]/[ISSUE_DIR_STUCK]/    - Issues requiring human intervention
-
-FAQ directory:
-- [FAQ_DIR]/                         - Frequently asked questions and troubleshooting guides
+- [FAQ_DIR]/                         - Troubleshooting
 
 ## Issue File Format
 
@@ -200,6 +197,8 @@ Your issue file: [ISSUE_FILE_PATH]
 - Be thoughtful about when to CONTINUE vs COMPLETE - don't leave trivial tasks incomplete
 - When creating child issues, make each one focused and actionable
 - Use bash commands (mv, cat, echo) to manage files - you have full filesystem access
+
+**Critical:** ALWAYS check the FAQ directory ([FAQ_DIR]/) to see if there is a guide when you encounter a problem.
 
 Now, please process the issue at [ISSUE_FILE_PATH].`;
 }
