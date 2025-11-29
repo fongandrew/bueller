@@ -314,7 +314,7 @@ async function runAgent(template: string, issuesDir: string, issueFile: string):
 	const stream = query({
 		prompt: systemPrompt,
 		options: {
-			settingSources: ['project'],
+			settingSources: ['local', 'project', 'user'],
 			permissionMode: 'acceptEdits',
 		},
 	});
