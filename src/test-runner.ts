@@ -37,14 +37,13 @@ async function buildProject(): Promise<void> {
 		});
 	} catch (error) {
 		console.error(`${colors.red}FAIL: Build failed${colors.reset}`);
+		console.error(error);
 		process.exit(1);
 	}
 
 	const buelerPath = path.join(PROJECT_ROOT, 'dist', 'bueller.js');
 	if (!fs.existsSync(buelerPath)) {
-		console.error(
-			`${colors.red}FAIL: Build did not produce dist/bueller.js${colors.reset}`,
-		);
+		console.error(`${colors.red}FAIL: Build did not produce dist/bueller.js${colors.reset}`);
 		process.exit(1);
 	}
 
@@ -80,13 +79,7 @@ async function runBuellerWithTimeout(
 
 		const child = spawn(
 			'node',
-			[
-				'bueller.js',
-				'--issues-dir',
-				'./issues',
-				'--max-iterations',
-				'10',
-			],
+			['bueller.js', '--issues-dir', './issues', '--max-iterations', '10'],
 			{
 				cwd: testTemp,
 				stdio: 'pipe',
@@ -166,11 +159,8 @@ async function runTest(testName: string): Promise<TestResult> {
 		path.join(testTemp, 'bueller.js'),
 	);
 
-	// Copy node_modules (need Claude SDK)
-	copyDirectory(
-		path.join(PROJECT_ROOT, 'node_modules'),
-		path.join(testTemp, 'node_modules'),
-	);
+	// Copy node_modules
+	copyDirectory(path.join(PROJECT_ROOT, 'node_modules'), path.join(testTemp, 'node_modules'));
 
 	// Copy the test fixture
 	const setupDir = path.join(testDir, 'setup');
@@ -185,12 +175,10 @@ async function runTest(testName: string): Promise<TestResult> {
 	copyDirectory(setupDir, path.join(testTemp, 'issues'));
 
 	// Run bueller with timeout
-	const { timedOut, output } = await runBuellerWithTimeout(testTemp, 60000);
+	const { timedOut } = await runBuellerWithTimeout(testTemp, 60000);
 
 	if (timedOut) {
-		console.log(
-			`${colors.red}TIMEOUT: Test took longer than 60 seconds${colors.reset}\n`,
-		);
+		console.log(`${colors.red}TIMEOUT: Test took longer than 60 seconds${colors.reset}\n`);
 		return {
 			name: testName,
 			passed: false,
@@ -220,8 +208,7 @@ async function runTest(testName: string): Promise<TestResult> {
 		return {
 			name: testName,
 			passed: false,
-			error:
-				error instanceof Error ? error.message : 'Verification failed',
+			error: error instanceof Error ? error.message : 'Verification failed',
 		};
 	}
 }
@@ -266,9 +253,7 @@ async function main(): Promise<void> {
 			console.log(
 				`${colors.yellow}WARNING: No test fixtures found in ${FIXTURES_DIR}${colors.reset}`,
 			);
-			console.log(
-				'Create test fixtures to get started. See tests/README.md for details.',
-			);
+			console.log('Create test fixtures to get started. See tests/README.md for details.');
 			process.exit(0);
 		}
 

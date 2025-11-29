@@ -65,3 +65,15 @@ Here is a summary of the work I have done:
 - Updated `tests/README.md` with comprehensive TypeScript documentation
 
 The test framework is now fully TypeScript-based. Run `npm test` to execute all tests, or `npm test <test-name>` for a specific test.
+
+---
+
+@user: Let's turn our `verify.ts` script into something that actually runs the Bueller script. This allows us to test how the script behaves with different CLI args. Rename it to something sensible as well.
+
+Also, move the test-runner.ts script into the `tests` directory alongside the `verify-utils`. Make sure our TSConfig and ESlint rules apply to files in here.
+
+Rename the `fixtures` directory to `specs`.
+
+Modify the test runner to NOT copy the entire node_modules directory into the temp directory. If the temp directory is already in the repo, it should "inherit" the node_modules.
+
+Make sure we clear out or clean the temp directory in between runs.
