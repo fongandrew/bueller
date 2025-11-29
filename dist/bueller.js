@@ -8,6 +8,7 @@ const ISSUE_DIR_STUCK = 'stuck';
 function parseArgs() {
     const args = process.argv.slice(2);
     let issuesDir = './issues';
+    let faqDir = './faq';
     let maxIterations = 100;
     let gitCommit = false;
     let promptFile = path.join('./issues', 'prompt.md');
@@ -19,6 +20,9 @@ function parseArgs() {
                 promptFile = path.join(issuesDir, 'prompt.md');
             }
         }
+        else if (args[i] === '--faq-dir' && i + 1 < args.length) {
+            faqDir = args[++i];
+        }
         else if (args[i] === '--max-iterations' && i + 1 < args.length) {
             maxIterations = parseInt(args[++i], 10);
         }
@@ -29,14 +33,15 @@ function parseArgs() {
             promptFile = args[++i];
         }
     }
-    return { issuesDir, maxIterations, gitCommit, promptFile };
+    return { issuesDir, faqDir, maxIterations, gitCommit, promptFile };
 }
-async function ensureDirectories(issuesDir) {
+async function ensureDirectories(issuesDir, faqDir) {
     const dirs = [
         issuesDir,
         path.join(issuesDir, ISSUE_DIR_OPEN),
         path.join(issuesDir, ISSUE_DIR_REVIEW),
         path.join(issuesDir, ISSUE_DIR_STUCK),
+        faqDir,
     ];
     for (const dir of dirs) {
         try {
@@ -86,10 +91,10 @@ function getDefaultPromptTemplate() {
 
 ## Your Environment
 
-Issues directory:
 - [ISSUES_DIR]/[ISSUE_DIR_OPEN]/     - Issues to be processed
 - [ISSUES_DIR]/[ISSUE_DIR_REVIEW]/   - Completed issues
 - [ISSUES_DIR]/[ISSUE_DIR_STUCK]/    - Issues requiring human intervention
+- [FAQ_DIR]/                         - Troubleshooting
 
 ## Issue File Format
 
@@ -132,7 +137,7 @@ Here is a summary of the work I have done:
 Your issue file: [ISSUE_FILE_PATH]
 
 1. **Read the issue**: Parse the conversation history in [ISSUE_FILE_PATH] to understand the task
-2. **Work on the task**: Do what the issue requests
+2. **Work on the task**: Do what the issue requests. When encountering issues, always check for a relevant guide in [FAQ_DIR]/ first.
 3. **Append your response**: Add your summary to [ISSUE_FILE_PATH] using this format:
    \`\`\`
    ---
@@ -174,6 +179,8 @@ Your issue file: [ISSUE_FILE_PATH]
 - When creating child issues, make each one focused and actionable
 - Use bash commands (mv, cat, echo) to manage files - you have full filesystem access
 
+**Critical:** ALWAYS check the FAQ directory ([FAQ_DIR]/) to see if there is a guide when you encounter a problem.
+
 Now, please process the issue at [ISSUE_FILE_PATH].`;
 }
 async function loadOrCreatePromptTemplate(promptFile) {
@@ -195,14 +202,16 @@ async function loadOrCreatePromptTemplate(promptFile) {
         return defaultTemplate;
     }
 }
-function buildSystemPrompt(template, issuesDir, issueFile) {
+function buildSystemPrompt(template, issuesDir, faqDir, issueFile) {
     const issueFilePath = path.join(issuesDir, ISSUE_DIR_OPEN, issueFile);
     // Convert all paths to absolute paths for clarity in the prompt
     const absoluteIssuesDir = path.resolve(issuesDir);
+    const absoluteFaqDir = path.resolve(faqDir);
     const absoluteIssueFilePath = path.resolve(issueFilePath);
     // Replace template variables with actual values
     return template
         .replace(/\[ISSUES_DIR\]/g, absoluteIssuesDir)
+        .replace(/\[FAQ_DIR\]/g, absoluteFaqDir)
         .replace(/\[ISSUE_DIR_OPEN\]/g, ISSUE_DIR_OPEN)
         .replace(/\[ISSUE_DIR_REVIEW\]/g, ISSUE_DIR_REVIEW)
         .replace(/\[ISSUE_DIR_STUCK\]/g, ISSUE_DIR_STUCK)
@@ -280,8 +289,8 @@ function logSDKMessage(item) {
             break;
     }
 }
-async function runAgent(template, issuesDir, issueFile) {
-    const systemPrompt = buildSystemPrompt(template, issuesDir, issueFile);
+async function runAgent(template, issuesDir, faqDir, issueFile) {
+    const systemPrompt = buildSystemPrompt(template, issuesDir, faqDir, issueFile);
     console.log('\n--- Starting agent ---');
     const stream = query({
         prompt: systemPrompt,
@@ -300,10 +309,11 @@ async function main() {
     console.log('Bueller? Bueller?');
     console.log('-----------------');
     console.log(`Issues directory: ${config.issuesDir}`);
+    console.log(`FAQ directory: ${config.faqDir}`);
     console.log(`Max iterations: ${config.maxIterations}`);
     console.log(`Git auto-commit: ${config.gitCommit ? 'enabled' : 'disabled'}`);
     console.log(`Prompt file: ${config.promptFile}`);
-    await ensureDirectories(config.issuesDir);
+    await ensureDirectories(config.issuesDir, config.faqDir);
     // Load or create the prompt template
     const promptTemplate = await loadOrCreatePromptTemplate(config.promptFile);
     let iteration = 0;
@@ -318,7 +328,7 @@ async function main() {
         console.log(`Found ${openIssues.length} open issue(s)`);
         console.log(`Next issue: ${openIssues[0]}`);
         const currentIssue = openIssues[0];
-        await runAgent(promptTemplate, config.issuesDir, currentIssue);
+        await runAgent(promptTemplate, config.issuesDir, config.faqDir, currentIssue);
         // Auto-commit if enabled and there's a current issue
         if (config.gitCommit && currentIssue) {
             // Determine the status based on where the issue ended up

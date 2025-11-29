@@ -10,11 +10,11 @@ import {
 const result = await runBueller({
 	issuesDir: './issues',
 	maxIterations: 10,
-	timeoutMs: 60000,
+	timeoutMs: 300000,
 });
 
 if (result.timedOut) {
-	throw new Error('FAIL: Test timed out after 60 seconds');
+	throw new Error('FAIL: Test timed out after 300 seconds');
 }
 
 // Check that the issue was moved to review

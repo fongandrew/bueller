@@ -109,3 +109,18 @@ The test framework now follows a cleaner architecture where `run.ts` scripts are
 ---
 
 @user: Tests are failing. Please fix.
+---
+
+@claude: I have fixed the failing tests.
+
+Here is a summary of the work I have done:
+- Identified the issue: Tests were timing out because the timeout was set to 60 seconds, which was insufficient for the Claude Agent SDK to complete its work
+- Checked the FAQ directory and found `faq/test-time-out.md` which clearly explained that the timeout was likely too low
+- Increased the timeout from 60 seconds to 300 seconds (5 minutes) in all four test run.ts files:
+  - `tests/specs/simple-task/run.ts`
+  - `tests/specs/stuck-task/run.ts`
+  - `tests/specs/multi-iteration/run.ts`
+  - `tests/specs/decompose-task/run.ts`
+- Fixed ESLint errors by adding `out/**/*` to the ignores in `eslint.config.js` (the TypeScript build output directory was being linted)
+- Verified all tests now pass (4/4 passing)
+- Verified lint:fix and typecheck both pass successfully
