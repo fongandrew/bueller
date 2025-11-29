@@ -1,6 +1,7 @@
 import { query, type SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import { type ToolUseBlockParam } from '@anthropic-ai/sdk/resources';
 import { type BetaToolUseBlock } from '@anthropic-ai/sdk/resources/beta.mjs';
+import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -11,22 +12,26 @@ const ISSUE_DIR_STUCK = 'stuck';
 interface Config {
 	issuesDir: string;
 	maxIterations: number;
+	gitCommit: boolean;
 }
 
 function parseArgs(): Config {
 	const args = process.argv.slice(2);
 	let issuesDir = './issues';
 	let maxIterations = 100;
+	let gitCommit = false;
 
 	for (let i = 0; i < args.length; i++) {
 		if (args[i] === '--issues-dir' && i + 1 < args.length) {
 			issuesDir = args[++i]!;
 		} else if (args[i] === '--max-iterations' && i + 1 < args.length) {
 			maxIterations = parseInt(args[++i]!, 10);
+		} else if (args[i] === '--git-commit') {
+			gitCommit = true;
 		}
 	}
 
-	return { issuesDir, maxIterations };
+	return { issuesDir, maxIterations, gitCommit };
 }
 
 function ensureDirectories(issuesDir: string): void {
@@ -50,6 +55,41 @@ function getOpenIssues(issuesDir: string): string[] {
 		.readdirSync(openDir)
 		.filter((f) => f.endsWith('.md'))
 		.sort();
+}
+
+function extractIssueId(issueFile: string): string {
+	// Extract ID from filename like "p0-002-git.md" -> "p0-002"
+	const match = issueFile.match(/^(p\d+-\d+)/);
+	return match ? match[1]! : issueFile.replace('.md', '');
+}
+
+function gitCommit(issueFile: string): void {
+	const issueId = extractIssueId(issueFile);
+
+	try {
+		// Check if there are any changes to commit
+		try {
+			execSync('git diff --quiet && git diff --cached --quiet');
+			console.log('No changes to commit');
+			return;
+		} catch {
+			// There are changes, proceed with commit
+		}
+
+		// Stage all changes
+		execSync('git add -A', { stdio: 'inherit' });
+
+		// Create commit with issue ID in the message
+		const commitMessage = `[${issueId}] Auto-commit`;
+
+		execSync(`git commit -m "${commitMessage.replace(/"/g, '\\"')}"`, {
+			stdio: 'inherit',
+		});
+
+		console.log(`\nGit commit created for issue ${issueId}`);
+	} catch (error) {
+		console.error(`Failed to create git commit: ${String(error)}`);
+	}
 }
 
 function buildSystemPrompt(issuesDir: string, issueFile: string): string {
@@ -161,6 +201,16 @@ function logToolUse(block: BetaToolUseBlock | ToolUseBlockParam): void {
 		case 'bash':
 			process.stdout.write(`${(block.input as any)?.command}`);
 			break;
+		case 'glob':
+			process.stdout.write(`${(block.input as any)?.pattern}`);
+			break;
+		case 'todowrite': {
+			const todos = (block.input as any)?.todos;
+			process.stdout.write(
+				todos.map((t: any) => `${String(t.content)} (${String(t.status)})`).join(', '),
+			);
+			break;
+		}
 		default:
 			break;
 	}
@@ -224,6 +274,7 @@ async function main(): Promise<void> {
 	console.log('-----------------');
 	console.log(`Issues directory: ${config.issuesDir}`);
 	console.log(`Max iterations: ${config.maxIterations}`);
+	console.log(`Git auto-commit: ${config.gitCommit ? 'enabled' : 'disabled'}`);
 
 	ensureDirectories(config.issuesDir);
 
@@ -243,7 +294,23 @@ async function main(): Promise<void> {
 		console.log(`Found ${openIssues.length} open issue(s)`);
 		console.log(`Next issue: ${openIssues[0]}`);
 
-		await runAgent(config.issuesDir, openIssues[0]!);
+		const currentIssue = openIssues[0]!;
+		const wasInOpen = fs.existsSync(path.join(config.issuesDir, ISSUE_DIR_OPEN, currentIssue));
+
+		await runAgent(config.issuesDir, currentIssue);
+
+		// Check if issue was moved to review (completed)
+		const isNowInReview = fs.existsSync(
+			path.join(config.issuesDir, ISSUE_DIR_REVIEW, currentIssue),
+		);
+		const isNoLongerInOpen = !fs.existsSync(
+			path.join(config.issuesDir, ISSUE_DIR_OPEN, currentIssue),
+		);
+
+		if (config.gitCommit && wasInOpen && isNoLongerInOpen && isNowInReview) {
+			console.log('\nIssue completed - creating git commit...');
+			gitCommit(currentIssue);
+		}
 	}
 
 	if (iteration >= config.maxIterations) {
