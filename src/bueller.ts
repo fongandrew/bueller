@@ -37,7 +37,7 @@ function parseArgs(): Config {
 			faqDir = args[++i]!;
 		} else if (args[i] === '--max-iterations' && i + 1 < args.length) {
 			maxIterations = parseInt(args[++i]!, 10);
-		} else if (args[i] === '--git-commit') {
+		} else if (args[i] === '--git' || args[i] === '--git-commit') {
 			gitCommit = true;
 		} else if (args[i] === '--prompt' && i + 1 < args.length) {
 			promptFile = args[++i]!;
