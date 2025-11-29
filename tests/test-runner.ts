@@ -1,9 +1,11 @@
 #!/usr/bin/env tsx
 
 import { execSync } from 'node:child_process';
-import * as fs from 'node:fs';
+import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { BUELLER_OUTPUT_FILE } from './verify-utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,7 +32,7 @@ const TEMP_BASE = path.join(PROJECT_ROOT, '.test-tmp');
 async function buildProject(): Promise<void> {
 	console.log('Building bueller...');
 	try {
-		execSync('npm run build', {
+		execSync('pnpm run build', {
 			cwd: PROJECT_ROOT,
 			stdio: 'inherit',
 		});
@@ -41,7 +43,9 @@ async function buildProject(): Promise<void> {
 	}
 
 	const buelerPath = path.join(PROJECT_ROOT, 'dist', 'bueller.js');
-	if (!fs.existsSync(buelerPath)) {
+	try {
+		await fs.access(buelerPath);
+	} catch {
 		console.error(`${colors.red}FAIL: Build did not produce dist/bueller.js${colors.reset}`);
 		process.exit(1);
 	}
@@ -49,21 +53,19 @@ async function buildProject(): Promise<void> {
 	console.log(`${colors.green}Build successful${colors.reset}\n`);
 }
 
-function copyDirectory(src: string, dest: string): void {
-	if (!fs.existsSync(dest)) {
-		fs.mkdirSync(dest, { recursive: true });
-	}
+async function copyDirectory(src: string, dest: string): Promise<void> {
+	await fs.mkdir(dest, { recursive: true });
 
-	const entries = fs.readdirSync(src, { withFileTypes: true });
+	const entries = await fs.readdir(src, { withFileTypes: true });
 
 	for (const entry of entries) {
 		const srcPath = path.join(src, entry.name);
 		const destPath = path.join(dest, entry.name);
 
 		if (entry.isDirectory()) {
-			copyDirectory(srcPath, destPath);
+			await copyDirectory(srcPath, destPath);
 		} else {
-			fs.copyFileSync(srcPath, destPath);
+			await fs.copyFile(srcPath, destPath);
 		}
 	}
 }
@@ -71,7 +73,9 @@ function copyDirectory(src: string, dest: string): void {
 async function runTest(testName: string): Promise<TestResult> {
 	const testDir = path.join(SPECS_DIR, testName);
 
-	if (!fs.existsSync(testDir)) {
+	try {
+		await fs.access(testDir);
+	} catch {
 		return {
 			name: testName,
 			passed: false,
@@ -80,7 +84,9 @@ async function runTest(testName: string): Promise<TestResult> {
 	}
 
 	const runScript = path.join(testDir, 'run.ts');
-	if (!fs.existsSync(runScript)) {
+	try {
+		await fs.access(runScript);
+	} catch {
 		return {
 			name: testName,
 			passed: false,
@@ -92,28 +98,33 @@ async function runTest(testName: string): Promise<TestResult> {
 
 	// Create temp directory for this test
 	const testTemp = path.join(TEMP_BASE, testName);
-	if (fs.existsSync(testTemp)) {
-		fs.rmSync(testTemp, { recursive: true, force: true });
+	try {
+		await fs.access(testTemp);
+		await fs.rm(testTemp, { recursive: true, force: true });
+	} catch {
+		// Directory doesn't exist, no need to remove
 	}
-	fs.mkdirSync(testTemp, { recursive: true });
+	await fs.mkdir(testTemp, { recursive: true });
 
 	// Copy the built script
-	fs.copyFileSync(
+	await fs.copyFile(
 		path.join(PROJECT_ROOT, 'dist', 'bueller.js'),
 		path.join(testTemp, 'bueller.js'),
 	);
 
-	// Copy the test setup (issues directory)
-	const setupDir = path.join(testDir, 'setup');
-	if (!fs.existsSync(setupDir)) {
+	// Copy the test issues directory
+	const issuesDir = path.join(testDir, 'issues');
+	try {
+		await fs.access(issuesDir);
+	} catch {
 		return {
 			name: testName,
 			passed: false,
-			error: `setup directory not found in ${testDir}`,
+			error: `issues directory not found in ${testDir}`,
 		};
 	}
 
-	copyDirectory(setupDir, path.join(testTemp, 'issues'));
+	await copyDirectory(issuesDir, path.join(testTemp, 'issues'));
 
 	// Run the test script (which will run Bueller and verify results)
 	try {
@@ -129,10 +140,33 @@ async function runTest(testName: string): Promise<TestResult> {
 			passed: true,
 		};
 	} catch (error) {
-		const outputFile = path.join(testTemp, 'bueller.output.txt');
+		const outputFile = path.join(testTemp, BUELLER_OUTPUT_FILE);
 		console.log(`${colors.red}FAIL: ${testName}${colors.reset}`);
-		if (fs.existsSync(outputFile)) {
-			console.log(`Output saved to: ${outputFile}`);
+
+		// Log the error details to console
+		if (error instanceof Error) {
+			// Extract the actual error message from stderr
+			const stderr = (error as any).stderr?.toString() || '';
+			const stdout = (error as any).stdout?.toString() || '';
+
+			if (stderr) {
+				console.log(`${colors.red}Error output:${colors.reset}`);
+				console.log(stderr);
+			}
+			if (stdout) {
+				console.log(`${colors.yellow}Standard output:${colors.reset}`);
+				console.log(stdout);
+			}
+			if (!stderr && !stdout && error.message) {
+				console.log(`${colors.red}Error: ${error.message}${colors.reset}`);
+			}
+		}
+
+		try {
+			await fs.access(outputFile);
+			console.log(`Bueller output saved to: ${outputFile}`);
+		} catch {
+			// Output file doesn't exist
 		}
 		console.log('');
 
@@ -152,10 +186,13 @@ async function main(): Promise<void> {
 	await buildProject();
 
 	// Clean up old test runs
-	if (fs.existsSync(TEMP_BASE)) {
-		fs.rmSync(TEMP_BASE, { recursive: true, force: true });
+	try {
+		await fs.access(TEMP_BASE);
+		await fs.rm(TEMP_BASE, { recursive: true, force: true });
+	} catch {
+		// Directory doesn't exist, no need to remove
 	}
-	fs.mkdirSync(TEMP_BASE, { recursive: true });
+	await fs.mkdir(TEMP_BASE, { recursive: true });
 
 	// Track results
 	const results: TestResult[] = [];
@@ -168,17 +205,17 @@ async function main(): Promise<void> {
 		// Run all tests
 		console.log(`Discovering tests in ${SPECS_DIR}...`);
 
-		if (!fs.existsSync(SPECS_DIR)) {
+		try {
+			await fs.access(SPECS_DIR);
+		} catch {
 			console.error(
 				`${colors.red}ERROR: Specs directory not found: ${SPECS_DIR}${colors.reset}`,
 			);
 			process.exit(1);
 		}
 
-		const testDirs = fs
-			.readdirSync(SPECS_DIR, { withFileTypes: true })
-			.filter((entry) => entry.isDirectory())
-			.map((entry) => entry.name);
+		const entries = await fs.readdir(SPECS_DIR, { withFileTypes: true });
+		const testDirs = entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name);
 
 		if (testDirs.length === 0) {
 			console.log(

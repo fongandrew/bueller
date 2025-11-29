@@ -105,3 +105,7 @@ Here is a summary of the work I have done:
 - TSConfig already includes `tests/**/*` so ESLint and TypeScript rules apply to test files
 
 The test framework now follows a cleaner architecture where `run.ts` scripts are responsible for running Bueller (with full control over CLI args), and the test runner just orchestrates the setup and execution.
+
+---
+
+@user: Tests are failing. Please fix.

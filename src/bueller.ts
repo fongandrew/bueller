@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import * as fs from 'node:fs';
+import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
 import { query, type SDKMessage } from '@anthropic-ai/claude-agent-sdk';
@@ -43,7 +43,7 @@ function parseArgs(): Config {
 	return { issuesDir, maxIterations, gitCommit, promptFile };
 }
 
-function ensureDirectories(issuesDir: string): void {
+async function ensureDirectories(issuesDir: string): Promise<void> {
 	const dirs = [
 		issuesDir,
 		path.join(issuesDir, ISSUE_DIR_OPEN),
@@ -52,18 +52,18 @@ function ensureDirectories(issuesDir: string): void {
 	];
 
 	for (const dir of dirs) {
-		if (!fs.existsSync(dir)) {
-			fs.mkdirSync(dir, { recursive: true });
+		try {
+			await fs.access(dir);
+		} catch {
+			await fs.mkdir(dir, { recursive: true });
 		}
 	}
 }
 
-function getOpenIssues(issuesDir: string): string[] {
+async function getOpenIssues(issuesDir: string): Promise<string[]> {
 	const openDir = path.join(issuesDir, ISSUE_DIR_OPEN);
-	return fs
-		.readdirSync(openDir)
-		.filter((f) => f.endsWith('.md'))
-		.sort();
+	const files = await fs.readdir(openDir);
+	return files.filter((f) => f.endsWith('.md')).sort();
 }
 
 function extractIssueId(issueFile: string): string {
@@ -196,27 +196,26 @@ Your issue file: [ISSUE_FILE_PATH]
 Now, please process the issue at [ISSUE_FILE_PATH].`;
 }
 
-function loadOrCreatePromptTemplate(promptFile: string): string {
+async function loadOrCreatePromptTemplate(promptFile: string): Promise<string> {
 	// If prompt file exists, load it
-	if (fs.existsSync(promptFile)) {
+	try {
+		await fs.access(promptFile);
 		console.log(`Loading prompt template from: ${promptFile}`);
-		return fs.readFileSync(promptFile, 'utf-8');
+		return await fs.readFile(promptFile, 'utf-8');
+	} catch {
+		// Otherwise, create the default prompt template
+		console.log(`Prompt file not found. Creating default template at: ${promptFile}`);
+		const defaultTemplate = getDefaultPromptTemplate();
+
+		// Ensure the directory exists
+		const promptDir = path.dirname(promptFile);
+		await fs.mkdir(promptDir, { recursive: true });
+
+		// Write the default template
+		await fs.writeFile(promptFile, defaultTemplate, 'utf-8');
+
+		return defaultTemplate;
 	}
-
-	// Otherwise, create the default prompt template
-	console.log(`Prompt file not found. Creating default template at: ${promptFile}`);
-	const defaultTemplate = getDefaultPromptTemplate();
-
-	// Ensure the directory exists
-	const promptDir = path.dirname(promptFile);
-	if (!fs.existsSync(promptDir)) {
-		fs.mkdirSync(promptDir, { recursive: true });
-	}
-
-	// Write the default template
-	fs.writeFileSync(promptFile, defaultTemplate, 'utf-8');
-
-	return defaultTemplate;
 }
 
 function buildSystemPrompt(template: string, issuesDir: string, issueFile: string): string {
@@ -335,10 +334,10 @@ async function main(): Promise<void> {
 	console.log(`Git auto-commit: ${config.gitCommit ? 'enabled' : 'disabled'}`);
 	console.log(`Prompt file: ${config.promptFile}`);
 
-	ensureDirectories(config.issuesDir);
+	await ensureDirectories(config.issuesDir);
 
 	// Load or create the prompt template
-	const promptTemplate = loadOrCreatePromptTemplate(config.promptFile);
+	const promptTemplate = await loadOrCreatePromptTemplate(config.promptFile);
 
 	let iteration = 0;
 
@@ -346,7 +345,7 @@ async function main(): Promise<void> {
 		iteration++;
 		console.log(`\n### Iteration ${iteration} ###\n`);
 
-		const openIssues = getOpenIssues(config.issuesDir);
+		const openIssues = await getOpenIssues(config.issuesDir);
 
 		if (openIssues.length === 0) {
 			console.log('No more issues in open/. Exiting.');
@@ -363,15 +362,30 @@ async function main(): Promise<void> {
 		// Auto-commit if enabled and there's a current issue
 		if (config.gitCommit && currentIssue) {
 			// Determine the status based on where the issue ended up
-			const isNowInReview = fs.existsSync(
-				path.join(config.issuesDir, ISSUE_DIR_REVIEW, currentIssue),
-			);
-			const isNowInStuck = fs.existsSync(
-				path.join(config.issuesDir, ISSUE_DIR_STUCK, currentIssue),
-			);
-			const isStillInOpen = fs.existsSync(
-				path.join(config.issuesDir, ISSUE_DIR_OPEN, currentIssue),
-			);
+			let isNowInReview = false;
+			let isNowInStuck = false;
+			let isStillInOpen = false;
+
+			try {
+				await fs.access(path.join(config.issuesDir, ISSUE_DIR_REVIEW, currentIssue));
+				isNowInReview = true;
+			} catch {
+				// File doesn't exist in review
+			}
+
+			try {
+				await fs.access(path.join(config.issuesDir, ISSUE_DIR_STUCK, currentIssue));
+				isNowInStuck = true;
+			} catch {
+				// File doesn't exist in stuck
+			}
+
+			try {
+				await fs.access(path.join(config.issuesDir, ISSUE_DIR_OPEN, currentIssue));
+				isStillInOpen = true;
+			} catch {
+				// File doesn't exist in open
+			}
 
 			let status = 'unknown';
 			if (isNowInReview) {

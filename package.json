@@ -5,7 +5,7 @@
 	"type": "module",
 	"main": "dist/bueller.js",
 	"scripts": {
-		"build": "tsc",
+		"build": "rm -rf dist out && tsc && mkdir -p dist && cp out/src/bueller.js dist/bueller.js",
 		"dev": "tsx src/bueller.ts",
 		"start": "node dist/bueller.js",
 		"test": "tsx tests/test-runner.ts",

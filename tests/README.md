@@ -8,7 +8,7 @@ This directory contains end-to-end tests for the Bueller issue processor.
 tests/
 ├── specs/             # Test case definitions
 │   ├── simple-task/
-│   │   ├── setup/     # Initial issues directory structure
+│   │   ├── issues/    # Initial issues directory structure
 │   │   └── run.ts     # Test script (runs Bueller + verification)
 │   └── ...
 ├── test-runner.ts     # Test runner that executes all specs
@@ -19,7 +19,7 @@ tests/
 ## How Tests Work
 
 1. Each test case is a directory under `specs/` containing:
-   - `setup/` - A complete issues directory with pre-made markdown files
+   - `issues/` - A complete issues directory with pre-made markdown files
    - `run.ts` - A TypeScript script that runs Bueller and verifies the outcome
 
 2. The test runner (`tests/test-runner.ts`):
@@ -27,7 +27,7 @@ tests/
    - For each test case:
      - Creates a temporary directory in `.test-tmp/` (git-ignored, inside the repo for node_modules access)
      - Copies the built script into it
-     - Copies the test fixture (setup directory)
+     - Copies the test fixture (issues directory)
      - Executes the `run.ts` script using `tsx`
      - Reports success/failure
 
@@ -53,14 +53,14 @@ npm test simple-task
 
 1. Create a new directory under `specs/`:
    ```bash
-   mkdir -p tests/specs/my-test/setup/open
-   mkdir -p tests/specs/my-test/setup/review
-   mkdir -p tests/specs/my-test/setup/stuck
+   mkdir -p tests/specs/my-test/issues/open
+   mkdir -p tests/specs/my-test/issues/review
+   mkdir -p tests/specs/my-test/issues/stuck
    ```
 
-2. Add issue files to `setup/open/`:
+2. Add issue files to `issues/open/`:
    ```bash
-   echo "@user: Do something" > tests/specs/my-test/setup/open/p1-001-test.md
+   echo "@user: Do something" > tests/specs/my-test/issues/open/p1-001-test.md
    ```
 
 3. Create a test script `run.ts`:

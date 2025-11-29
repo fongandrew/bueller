@@ -1,9 +1,11 @@
 import { spawn } from 'node:child_process';
-import * as fs from 'node:fs';
+import * as fs from 'node:fs/promises';
 
 /**
  * Utility functions for test verification scripts
  */
+
+export const BUELLER_OUTPUT_FILE = 'bueller.output.txt';
 
 export class VerificationError extends Error {
 	constructor(message: string) {
@@ -38,7 +40,7 @@ export async function runBueller(options: RunBuellerOptions = {}): Promise<{
 	} = options;
 
 	const args = [
-		'../bueller.js',
+		'./bueller.js',
 		'--issues-dir',
 		issuesDir,
 		'--max-iterations',
@@ -68,11 +70,14 @@ export async function runBueller(options: RunBuellerOptions = {}): Promise<{
 			output.push(data.toString());
 		});
 
-		child.on('close', (code) => {
+		child.on('close', async (code) => {
 			clearTimeout(timeout);
 			const fullOutput = output.join('');
-			// Save output for debugging
-			fs.writeFileSync('bueller.output.txt', fullOutput);
+			// Save output for debugging, include timeout status
+			const outputWithStatus = timedOut
+				? `[TIMED OUT after ${timeoutMs}ms]\n\n${fullOutput}`
+				: fullOutput;
+			await fs.writeFile(BUELLER_OUTPUT_FILE, outputWithStatus);
 			resolve({
 				exitCode: code ?? 1,
 				output: fullOutput,
@@ -80,10 +85,10 @@ export async function runBueller(options: RunBuellerOptions = {}): Promise<{
 			});
 		});
 
-		child.on('error', (error) => {
+		child.on('error', async (error) => {
 			clearTimeout(timeout);
 			const errorOutput = `Error: ${error.message}`;
-			fs.writeFileSync('bueller.output.txt', errorOutput);
+			await fs.writeFile(BUELLER_OUTPUT_FILE, errorOutput);
 			resolve({
 				exitCode: 1,
 				output: errorOutput,
@@ -96,8 +101,10 @@ export async function runBueller(options: RunBuellerOptions = {}): Promise<{
 /**
  * Assert that a file exists
  */
-export function assertFileExists(filePath: string, message?: string): void {
-	if (!fs.existsSync(filePath)) {
+export async function assertFileExists(filePath: string, message?: string): Promise<void> {
+	try {
+		await fs.access(filePath);
+	} catch {
 		throw new VerificationError(message || `FAIL: File does not exist: ${filePath}`);
 	}
 }
@@ -105,18 +112,28 @@ export function assertFileExists(filePath: string, message?: string): void {
 /**
  * Assert that a file does not exist
  */
-export function assertFileNotExists(filePath: string, message?: string): void {
-	if (fs.existsSync(filePath)) {
+export async function assertFileNotExists(filePath: string, message?: string): Promise<void> {
+	try {
+		await fs.access(filePath);
 		throw new VerificationError(message || `FAIL: File should not exist: ${filePath}`);
+	} catch (error) {
+		// File doesn't exist, which is what we want
+		if (error instanceof VerificationError) {
+			throw error;
+		}
 	}
 }
 
 /**
  * Assert that a file contains a string
  */
-export function assertFileContains(filePath: string, search: string, message?: string): void {
-	assertFileExists(filePath);
-	const content = fs.readFileSync(filePath, 'utf-8');
+export async function assertFileContains(
+	filePath: string,
+	search: string,
+	message?: string,
+): Promise<void> {
+	await assertFileExists(filePath);
+	const content = await fs.readFile(filePath, 'utf-8');
 	if (!content.includes(search)) {
 		throw new VerificationError(
 			message || `FAIL: File ${filePath} does not contain '${search}'`,
@@ -127,9 +144,13 @@ export function assertFileContains(filePath: string, search: string, message?: s
 /**
  * Assert that a file matches a regex pattern
  */
-export function assertFileMatches(filePath: string, pattern: RegExp, message?: string): void {
-	assertFileExists(filePath);
-	const content = fs.readFileSync(filePath, 'utf-8');
+export async function assertFileMatches(
+	filePath: string,
+	pattern: RegExp,
+	message?: string,
+): Promise<void> {
+	await assertFileExists(filePath);
+	const content = await fs.readFile(filePath, 'utf-8');
 	if (!pattern.test(content)) {
 		throw new VerificationError(
 			message || `FAIL: File ${filePath} does not match pattern ${pattern}`,
@@ -140,9 +161,9 @@ export function assertFileMatches(filePath: string, pattern: RegExp, message?: s
 /**
  * Count occurrences of a string in a file
  */
-export function countInFile(filePath: string, search: string): number {
-	assertFileExists(filePath);
-	const content = fs.readFileSync(filePath, 'utf-8');
+export async function countInFile(filePath: string, search: string): Promise<number> {
+	await assertFileExists(filePath);
+	const content = await fs.readFile(filePath, 'utf-8');
 	const matches = content.match(new RegExp(search, 'g'));
 	return matches ? matches.length : 0;
 }
