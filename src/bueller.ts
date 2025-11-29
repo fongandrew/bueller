@@ -159,7 +159,7 @@ Here is a summary of the work I have done:
 Your issue file: [ISSUE_FILE_PATH]
 
 1. **Read the issue**: Parse the conversation history in [ISSUE_FILE_PATH] to understand the task
-2. **Work on the task**: Do what the issue requests. If you encounter errors, check for a relevant guide in [FAQ_DIR]/.
+2. **Work on the task**: Do what the issue requests. When encountering issues, always check for a relevant guide in [FAQ_DIR]/ first.
 3. **Append your response**: Add your summary to [ISSUE_FILE_PATH] using this format:
    \`\`\`
    ---
