@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Bueller is a headless Claude Code issue processor that runs Claude Code in a loop to process issues from a directory queue. It's a wrapper around the `@anthropic-ai/claude-agent-sdk` that automates task execution based on markdown issue files.
+Bueller Wheel (npm package: `bueller-wheel`) is a headless Claude Code issue processor that runs Claude Code in a loop to process issues from a directory queue. It's a wrapper around the `@anthropic-ai/claude-agent-sdk` that automates task execution based on markdown issue files.
 
 ## Directory Structure
 
@@ -20,7 +20,7 @@ Bueller is a headless Claude Code issue processor that runs Claude Code in a loo
   - `specs/` - Test specifications with issues and verification scripts
   - `test-runner.ts` - Test harness
 - `src/` - Source code
-  - `bueller.ts` - Main entry point
+  - `index.ts` - Main entry point
 
 ## Code Style
 

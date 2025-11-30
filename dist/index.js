@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { execSync } from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
@@ -428,4 +429,4 @@ main().catch((error) => {
     console.error('Error:', error);
     process.exit(1);
 });
-//# sourceMappingURL=bueller.js.map
+//# sourceMappingURL=index.js.map

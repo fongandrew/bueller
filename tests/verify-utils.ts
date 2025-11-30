@@ -40,7 +40,7 @@ export async function runBueller(options: RunBuellerOptions = {}): Promise<{
 	} = options;
 
 	const args = [
-		'./bueller.js',
+		'./index.js',
 		'--issues-dir',
 		issuesDir,
 		'--max-iterations',

@@ -1,22 +1,49 @@
 {
-	"name": "bueller",
+	"name": "bueller-wheel",
 	"version": "0.1.0",
-	"description": "Node.js TypeScript script",
+	"description": "Headless Claude Code issue processor - A wrapper that runs Claude Code in a loop to process issues from a directory queue",
 	"type": "module",
-	"main": "dist/bueller.js",
+	"main": "dist/index.js",
+	"bin": {
+		"bueller-wheel": "./dist/index.js"
+	},
 	"scripts": {
-		"build": "rm -rf dist out && tsc && mkdir -p dist && cp out/src/bueller.js dist/bueller.js",
-		"dev": "tsx src/bueller.ts",
-		"start": "node dist/bueller.js",
+		"build": "rm -rf dist out && tsc && mkdir -p dist && cp out/src/index.js dist/index.js && echo '#!/usr/bin/env node' | cat - dist/index.js > dist/index.tmp && mv dist/index.tmp dist/index.js && chmod +x dist/index.js",
+		"dev": "tsx src/index.ts",
+		"start": "node dist/index.js",
 		"test": "tsx tests/test-runner.ts",
 		"typecheck": "tsc --noEmit",
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix",
 		"format": "prettier --write ."
 	},
-	"keywords": [],
+	"keywords": [
+		"claude",
+		"claude-code",
+		"automation",
+		"ai",
+		"issue-tracker",
+		"task-automation",
+		"agent"
+	],
 	"author": "Andrew Fong <id@andrewfong.com>",
 	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/fongandrew/bueller-wheel.git"
+	},
+	"bugs": {
+		"url": "https://github.com/fongandrew/bueller-wheel/issues"
+	},
+	"homepage": "https://github.com/fongandrew/bueller-wheel#readme",
+	"files": [
+		"dist/index.js",
+		"README.md",
+		"LICENSE"
+	],
+	"engines": {
+		"node": ">=18.0.0"
+	},
 	"devDependencies": {
 		"@anthropic-ai/sdk": "^0.71.0",
 		"@eslint/js": "^9.30.1",

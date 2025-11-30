@@ -30,7 +30,7 @@ const SPECS_DIR = path.join(SCRIPT_DIR, 'specs');
 const TEMP_BASE = path.join(PROJECT_ROOT, '.test-tmp');
 
 async function buildProject(): Promise<void> {
-	console.log('Building bueller...');
+	console.log('Building bueller-wheel…');
 	try {
 		execSync('pnpm run build', {
 			cwd: PROJECT_ROOT,
@@ -42,11 +42,11 @@ async function buildProject(): Promise<void> {
 		process.exit(1);
 	}
 
-	const buelerPath = path.join(PROJECT_ROOT, 'dist', 'bueller.js');
+	const buelerPath = path.join(PROJECT_ROOT, 'dist', 'index.js');
 	try {
 		await fs.access(buelerPath);
 	} catch {
-		console.error(`${colors.red}FAIL: Build did not produce dist/bueller.js${colors.reset}`);
+		console.error(`${colors.red}FAIL: Build did not produce dist/index.js${colors.reset}`);
 		process.exit(1);
 	}
 
@@ -107,10 +107,7 @@ async function runTest(testName: string): Promise<TestResult> {
 	await fs.mkdir(testTemp, { recursive: true });
 
 	// Copy the built script
-	await fs.copyFile(
-		path.join(PROJECT_ROOT, 'dist', 'bueller.js'),
-		path.join(testTemp, 'bueller.js'),
-	);
+	await fs.copyFile(path.join(PROJECT_ROOT, 'dist', 'index.js'), path.join(testTemp, 'index.js'));
 
 	// Copy the test issues directory
 	const issuesDir = path.join(testDir, 'issues');

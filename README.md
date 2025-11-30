@@ -1,17 +1,35 @@
-# Bueller - Headless Claude Code Issue Processor
+# Bueller Wheel - Headless Claude Code Issue Processor
 
 A simple wrapper that runs Claude Code in a headless loop to process issues from a directory queue.
 
 ## Quick Start
 
-1. Install `@anthropic-ai/claude-agent-sdk` using `npm` or your package manager of choice.
-2. Copy [dist/bueller.js](dist/bueller.js) to the root directory of rour repo. Make it executable if you need to.
-3. Create an issue:
+### Using npx (Recommended)
+
+```bash
+# Create an issue
+mkdir -p issues/open
+echo "@user: Please create a test file with 'Hello World'" > issues/open/p0-100-my-task.md
+
+# Run bueller
+npx bueller-wheel
+```
+
+### Manual Installation
+
+1. Install the package:
+   ```bash
+   npm install -g bueller-wheel
+   ```
+2. Create an issue:
    ```bash
    mkdir -p issues/open
    echo "@user: Please create a test file with 'Hello World'" > issues/open/p0-100-my-task.md
    ```
-4. Run `bueller.js`.
+3. Run:
+   ```bash
+   bueller-wheel
+   ```
 
 ## Directory Structure
 
@@ -93,7 +111,10 @@ Here is a summary of the work I have done:
 ## CLI Options
 
 ```bash
-./bueller.js --issues-dir ./my-issues --faq-dir ./my-faq --max-iterations 50 --git-commit --prompt ./my-prompt.md
+npx bueller-wheel --issues-dir ./my-issues --faq-dir ./my-faq --max-iterations 50 --git-commit --prompt ./my-prompt.md
+
+# Or if installed globally
+bueller --issues-dir ./my-issues --faq-dir ./my-faq --max-iterations 50 --git-commit --prompt ./my-prompt.md
 ```
 
 - `--issues-dir <path>`: Issues directory (default: `./issues`)
