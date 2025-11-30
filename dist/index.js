@@ -17,7 +17,7 @@ OPTIONS:
   --help              Show this help message and exit
   --issues-dir DIR    Directory containing issue queue (default: ./issues)
   --faq-dir DIR       Directory containing FAQ/troubleshooting guides (default: ./faq)
-  --max-iterations N  Maximum number of iterations to run (default: 100)
+  --max-iterations N  Maximum number of iterations to run (default: 25)
   --git, --git-commit Enable automatic git commits after each iteration
   --prompt FILE       Custom prompt template file (default: ./issues/prompt.md)
   --continue [PROMPT] Continue from previous session (default prompt: "continue")
@@ -56,7 +56,7 @@ function parseArgs() {
     }
     let issuesDir = './issues';
     let faqDir = './faq';
-    let maxIterations = 100;
+    let maxIterations = 25;
     let gitCommit = false;
     let promptFile = path.join('./issues', 'prompt.md');
     let continueMode = false;
