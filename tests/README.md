@@ -122,10 +122,3 @@ The `verify-utils.ts` module provides:
 - `pass(message)` - Print success message and exit
 
 All assert functions throw `VerificationError` on failure.
-
-## Example Test Cases
-
-- `simple-task` - Basic task that should complete in one iteration
-- `multi-iteration` - Task that requires multiple iterations
-- `decompose-task` - Task that should be decomposed into sub-tasks
-- `stuck-task` - Task that should fail and move to stuck

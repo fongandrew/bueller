@@ -1,72 +1,77 @@
-# Bueller Wheel - Headless Claude Code Issue Processor
+# Bueller Wheel
 
-A simple wrapper that runs Claude Code in a headless loop to process issues from a directory queue.
+A headless Claude Code issue processor that runs in a loop and resolves issues or tickets written in markdown
 
 ## Quick Start
-
-### Using npx (Recommended)
 
 ```bash
 # Create an issue
 mkdir -p issues/open
 echo "@user: Please create a test file with 'Hello World'" > issues/open/p0-100-my-task.md
 
-# Run bueller
+# Run bueller-wheel to complete the task
 npx bueller-wheel
 ```
 
-### Manual Installation
+## Why?
 
-1. Install the package:
-   ```bash
-   npm install -g bueller-wheel
-   ```
-2. Create an issue:
-   ```bash
-   mkdir -p issues/open
-   echo "@user: Please create a test file with 'Hello World'" > issues/open/p0-100-my-task.md
-   ```
-3. Run:
-   ```bash
-   bueller-wheel
-   ```
+Claude Code agents work better when they focus on one thing at a time. Bueller Wheel helps defer context until it's needed through two mechanisms:
 
-## Directory Structure
+**Issues as directory-based threads** - Each task becomes a reviewable conversation stored as markdown that gets moved along a file-based "kanban" board. This solves a few problems:
+- **Code review**: When Claude burns through multiple tasks, it's hard to know what happened. The issues structure creates discrete, reviewable units of work.
+- **Iteration without re-prompting**: Markdown files are structured as a back-and-forth between you and Claude, which lets you append follow-ups naturally without starting over.
+- **Human-editable prompts**: Storing issues as simple markdown (not JSON or a database) makes it easy to edit, append, or retroactively clean up conversations to improve prompting.
 
-### Issues Directory
+**FAQ system** - Common mistakes get documented once, then referenced automatically. Instead of repeating corrections or watching Claude make the same errors over and over, capture solutions in FAQ files that the agent checks when stuck.
 
-Issues are markdown files in the `issues/` directory with this structure:
+**Note:** Bueller Wheel is not a full-fledged task management system. It has no concept of assignment or dependency apart from linear file ordering. The sweet spot for this tool is **solo developers working on a single branch**, but you can make [parallel branches and agents](#working-with-multiple-branches) work.
 
-- `issues/open/` - Issues to be processed
-- `issues/review/` - Completed issues
-- `issues/stuck/` - Issues requiring human intervention
+## How It Works
 
-### FAQ Directory
+**The Processing Loop**
 
-The `faq/` directory contains frequently asked questions and troubleshooting guides that help the agent resolve common issues:
+1. Bueller Wheel finds the next issue in `issues/open/` (sorted alphabetically by filename)
+2. Claude Code reads the issue and works on the task
+3. Claude appends its work summary to the issue file
+4. Claude decides the outcome:
+   - **CONTINUE**: Keep working (stays in `open/`)
+   - **COMPLETE**: Done (moves to `review/`)
+   - **DECOMPOSE**: Split into sub-tasks (creates child issues, moves parent to `review/`)
+   - **STUCK**: Needs help (moves to `stuck/`)
 
-- `faq/` - Markdown files with solutions to common problems
-- The agent is instructed to check this directory when encountering issues
-- Configurable via `--faq-dir` (default: `./faq`)
+**Managing the "kanban" board:**
 
-### Filename Format
-`p{priority}-{order}-{description}.md`
+- Create issue markdown in `open/` for each task you want Claude to work on. Name files alphabetically in the order you want them processed. By default, the prompt used tells our agent to name files with something like `p1-101-name-of-task.md` (`p1` is a priority between 0 to 2, and `101` is just an arbitrary number for ordering).
+- Move issues from `review/` or `stuck/` back to `open/` if more work is required
+- Delete issues from `review/` when done reviewing, or archive them however you want
+
+**Each iteration is a fresh Claude Code session** - no memory between iterations, which keeps context focused.
+
+**Inherits your project's Claude Code setup** - `bueller-wheel` uses the Anthropic API credential from whichever user you're logged in as. It inherits the same `.claude/settings.json` or `.claude/settings.local.json` as the Claude Code project it's used in. Whatever permissions apply to your regular `claude` CLI should also apply to `bueller-wheel`, with the exception that `bueller-wheel` starts in "accept edits" mode.
+
+## Issue Structure
+
+**Directory Layout**
+```
+issues/
+  open/      - Issues to be processed
+  review/    - Completed issues ready for human review
+  stuck/     - Issues blocked, requiring human intervention
+  prompt.md  - Custom prompt template (optional)
+```
+
+**Filename Format:** `p{priority}-{order}-{description}.md`
 
 Examples:
-- `p0-100-fix-critical-bug.md` (priority 0, order 100)
-- `p1-050-add-feature.md` (priority 1, order 50)
-- `p2-020-refactor-code.md` (priority 2, order 20)
+- `p0-100-fix-critical-bug.md` (urgent work)
+- `p1-050-add-feature.md` (normal feature work)
+- `p2-020-refactor-code.md` (non-blocking follow-up)
 
-**Priority scheme**:
-- `p0`: Urgent/unexpected work
-- `p1`: Normal feature work
-- `p2`: Non-blocking follow-up
+Files are processed alphabetically (p0 before p1, lower order numbers first).
 
-Files are processed alphabetically (p0 before p1, lower numbers before higher).
+**Issue Content: A Conversation**
 
-### File Content Format
-
-Issues contain a conversation between user and Claude:
+Issues are markdown files with a simple conversation structure:
 
 ```markdown
 @user: Please build the widget factory.
@@ -94,19 +99,42 @@ Here is a summary of the work I have done:
 - Updated tests
 ```
 
-## How It Works
+Because it's just markdown, you can:
+- Append new instructions at any time
+- Edit previous messages to clarify intent
+- Delete irrelevant parts of the conversation
+- Copy successful patterns to new issues
 
-1. **Main Loop**: Checks `issues/open/` for markdown files
-2. **Agent Processing**: Invokes Claude Code with a system prompt that:
-   - Reads the next issue (alphabetically lowest)
-   - Works on the task
-   - Appends a summary to the issue file
-   - Decides what to do next
-3. **Outcomes**: The agent can:
-   - **CONTINUE**: Leave in `open/` for another iteration
-   - **COMPLETE**: Move to `review/`
-   - **DECOMPOSE**: Create child issues (`-001.md`, `-002.md`) in `open/`, move parent to `review/`
-   - **STUCK**: Move to `stuck/`
+## FAQ System
+
+The `faq/` directory contains markdown files with solutions to common problems. When Claude encounters issues, it's instructed to check this directory for relevant guidance.
+
+**Why this helps:**
+- Document a fix once, reference it forever
+- Keep Claude on track with project-specific conventions
+- Reduce repeated mistakes without cluttering every issue prompt
+
+**Example FAQ structure:**
+```
+faq/
+  testing-guidelines.md
+  code-style.md
+  common-errors.md
+```
+
+Configure the location with `--faq-dir` (default: `./faq`)
+
+## Working with Multiple Branches
+
+The `open/` directory acts as an inbox for the agent on the current branch. The agent will attempt to burn through all issues in that directory (or until it hits `--max-iterations`).
+
+**If you want to divide work across multiple branches or run multiple agents in parallel:**
+
+1. **Track issues outside `open/`** - Use an external issue tracker or create an `issues/backlog/` directory. Bueller Wheel doesn't process anything except in the `open/` directory.
+
+2. **One branch per agent** - Create a separate branch (or checkout/worktree) for each agent working in parallel.
+
+3. **Move issues into `open/` as tasks for a single agent** - Only move issues from your backlog into `open/` that you want the current agent to work on. Think of it as dividing work into reviewable chunks that are easier to merge.
 
 ## CLI Options
 
@@ -114,23 +142,23 @@ Here is a summary of the work I have done:
 npx bueller-wheel --issues-dir ./my-issues --faq-dir ./my-faq --max-iterations 50 --git-commit --prompt ./my-prompt.md
 
 # Or if installed globally
-bueller --issues-dir ./my-issues --faq-dir ./my-faq --max-iterations 50 --git-commit --prompt ./my-prompt.md
+bueller-wheel --issues-dir ./my-issues --faq-dir ./my-faq --max-iterations 50 --git-commit --prompt ./my-prompt.md
 ```
 
 - `--issues-dir <path>`: Issues directory (default: `./issues`)
 - `--faq-dir <path>`: FAQ directory (default: `./faq`)
-- `--max-iterations <number>`: Maximum iterations (default: `100`)
+- `--max-iterations <number>`: Maximum iterations (default: `25`)
 - `--git-commit`: Enable automatic git commits after each iteration (default: disabled)
 - `--prompt <path>`: Path to custom prompt template file (default: `<issues-dir>/prompt.md`)
 - `--continue [prompt]`: Continue from previous session. Optional prompt defaults to "continue" if not provided
 
 ### Custom Prompt Templates
 
-Bueller uses a customizable prompt template system that allows you to tailor the agent's behavior.
+Bueller Wheel uses a customizable prompt template system that allows you to tailor the agent's behavior.
 
 #### How It Works
 
-1. **Default Template**: On first run, Bueller creates a default prompt template at `<issues-dir>/prompt.md`
+1. **Default Template**: On first run, Bueller Wheel creates a default prompt template at `<issues-dir>/prompt.md`
 2. **Custom Template**: You can edit this file or specify a different template with `--prompt`
 3. **Template Variables**: The template uses bracketed variables that are replaced at runtime
 
@@ -170,56 +198,36 @@ When complete, move it to: ./issues/review/p0-100-task.md
 
 ### Continue Mode
 
-The `--continue` flag allows you to resume from a previous session, maintaining the conversation context:
+The `--continue` flag continues from the last Claude session with a custom prompt. You can use this to interrupt a live loop that's going sideways and nudge it back on track.
 
 ```bash
 # Continue with default "continue" prompt
 npx bueller-wheel --continue
 
 # Continue with custom instructions
-npx bueller-wheel --continue "fix the failing tests"
-
-# Continue with a specific directive
-npx bueller-wheel --continue "Now implement the user authentication feature"
+npx bueller-wheel --continue "no use foo instead of bar"
 ```
 
-**How it works:**
-- When `--continue` is used, Bueller resumes from the last session's state
-- The prompt parameter (or default "continue") is sent instead of the full system prompt
-- This is useful for iterating on work without starting fresh each time
-- The agent retains memory of previous interactions in the session
-
-**Use cases:**
-- Resuming after interruption
-- Providing additional instructions based on previous work
-- Iterating on a solution without re-explaining the context
+Note that only the immediate prior iteration is continued. The next iteration will start with a fresh context and the original prompt.
 
 ### Git Auto-Commit
 
-When `--git-commit` is enabled, Bueller will automatically create a git commit after each iteration where work was done on an issue.
+When `--git-commit` is enabled, Bueller Wheel will automatically create a git commit after each iteration where work was done on an issue.
 
-The commit message format includes the full issue ID and status:
+The commit message format includes the issue ID (the filename minus the `.md`) and status:
 ```
 p0-002-git done
 p0-002-git in progress
 p0-002-git stuck
 p0-002-git unknown
 ```
+## Development
 
-The issue ID is extracted from the filename (e.g., `p0-002-git.md` → `p0-002-git`) and the status reflects what happened during the iteration:
-- `done` - Issue completed (moved from `open/` to `review/`)
-- `in progress` - Issue still being worked on (remains in `open/`)
-- `stuck` - Issue blocked (moved from `open/` to `stuck/`)
-- `unknown` - Issue not found in any expected location
+`pnpm run dev` will execute the current `src/index.ts` script file with whatever args you pass to it.
 
-**Notes:**
-- Automatically stages all changes (`git add -A`)
-- Skips commit if there are no changes to commit
-- Each iteration gets its own commit for easy tracking of progress
+## End-to-End Testing
 
-## Testing
-
-Bueller includes an end-to-end test framework to verify behavior:
+**These tests use your actual live instance of Claude Code!**
 
 ```bash
 # Run all tests
@@ -234,11 +242,3 @@ Tests are located in `tests/fixtures/` and consist of:
 - Verification scripts to check outcomes
 
 See [tests/README.md](tests/README.md) for more details on creating new test cases.
-
-## Notes
-
-- Each iteration is a fresh Claude Code session (no memory between iterations)
-- The agent manages all file operations (moving issues, creating sub-issues)
-- The wrapper just runs the loop and streams output
-- Uses the same `ANTHROPIC_API_KEY` and setup as your Claude Code project
-
