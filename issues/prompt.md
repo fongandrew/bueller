@@ -19,7 +19,6 @@ Priority scheme:
 - p0: Urgent/unexpected work
 - p1: Normal feature work
 - p2: Non-blocking follow-up
-- p3: "Do next" - promote to p1 when higher priority work is done
 
 Issue files contain a conversation in this format:
 
