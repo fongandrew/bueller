@@ -122,6 +122,7 @@ bueller --issues-dir ./my-issues --faq-dir ./my-faq --max-iterations 50 --git-co
 - `--max-iterations <number>`: Maximum iterations (default: `100`)
 - `--git-commit`: Enable automatic git commits after each iteration (default: disabled)
 - `--prompt <path>`: Path to custom prompt template file (default: `<issues-dir>/prompt.md`)
+- `--continue [prompt]`: Continue from previous session. Optional prompt defaults to "continue" if not provided
 
 ### Custom Prompt Templates
 
@@ -166,6 +167,32 @@ When complete, move it to: ./issues/review/p0-100-task.md
 1. Copy the default template from `issues/prompt.md`
 2. Modify the instructions while keeping the template variables
 3. Optionally save it to a different location and use `--prompt` to specify it
+
+### Continue Mode
+
+The `--continue` flag allows you to resume from a previous session, maintaining the conversation context:
+
+```bash
+# Continue with default "continue" prompt
+npx bueller-wheel --continue
+
+# Continue with custom instructions
+npx bueller-wheel --continue "fix the failing tests"
+
+# Continue with a specific directive
+npx bueller-wheel --continue "Now implement the user authentication feature"
+```
+
+**How it works:**
+- When `--continue` is used, Bueller resumes from the last session's state
+- The prompt parameter (or default "continue") is sent instead of the full system prompt
+- This is useful for iterating on work without starting fresh each time
+- The agent retains memory of previous interactions in the session
+
+**Use cases:**
+- Resuming after interruption
+- Providing additional instructions based on previous work
+- Iterating on a solution without re-explaining the context
 
 ### Git Auto-Commit
 

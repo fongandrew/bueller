@@ -16,6 +16,17 @@ interface Config {
 	maxIterations: number;
 	gitCommit: boolean;
 	promptFile: string;
+	continueMode: boolean;
+	continuePrompt: string;
+}
+
+interface RunAgentOptions {
+	template: string;
+	issuesDir: string;
+	faqDir: string;
+	issueFile: string;
+	continueMode: boolean;
+	continuePrompt: string;
 }
 
 function showHelp(): void {
@@ -32,6 +43,7 @@ OPTIONS:
   --max-iterations N  Maximum number of iterations to run (default: 100)
   --git, --git-commit Enable automatic git commits after each iteration
   --prompt FILE       Custom prompt template file (default: ./issues/prompt.md)
+  --continue [PROMPT] Continue from previous session (default prompt: "continue")
 
 DIRECTORY STRUCTURE:
   issues/
@@ -73,6 +85,8 @@ function parseArgs(): Config {
 	let maxIterations = 100;
 	let gitCommit = false;
 	let promptFile = path.join('./issues', 'prompt.md');
+	let continueMode = false;
+	let continuePrompt = 'continue';
 
 	for (let i = 0; i < args.length; i++) {
 		if (args[i] === '--issues-dir' && i + 1 < args.length) {
@@ -89,10 +103,24 @@ function parseArgs(): Config {
 			gitCommit = true;
 		} else if (args[i] === '--prompt' && i + 1 < args.length) {
 			promptFile = args[++i]!;
+		} else if (args[i] === '--continue') {
+			continueMode = true;
+			// Check if next arg exists and doesn't start with --
+			if (i + 1 < args.length && !args[i + 1]!.startsWith('--')) {
+				continuePrompt = args[++i]!;
+			}
 		}
 	}
 
-	return { issuesDir, faqDir, maxIterations, gitCommit, promptFile };
+	return {
+		issuesDir,
+		faqDir,
+		maxIterations,
+		gitCommit,
+		promptFile,
+		continueMode,
+		continuePrompt,
+	};
 }
 
 async function ensureDirectories(issuesDir: string, faqDir: string): Promise<void> {
@@ -375,21 +403,19 @@ function logSDKMessage(item: SDKMessage): void {
 	}
 }
 
-async function runAgent(
-	template: string,
-	issuesDir: string,
-	faqDir: string,
-	issueFile: string,
-): Promise<void> {
+async function runAgent(options: RunAgentOptions): Promise<void> {
+	const { template, issuesDir, faqDir, issueFile, continueMode, continuePrompt } = options;
+
 	const systemPrompt = buildSystemPrompt(template, issuesDir, faqDir, issueFile);
 
 	console.log('\n--- Starting agent ---');
 
 	const stream = query({
-		prompt: systemPrompt,
+		prompt: continueMode ? continuePrompt : systemPrompt,
 		options: {
 			settingSources: ['local', 'project', 'user'],
 			permissionMode: 'acceptEdits',
+			continue: continueMode,
 		},
 	});
 
@@ -410,6 +436,9 @@ async function main(): Promise<void> {
 	console.log(`Max iterations: ${config.maxIterations}`);
 	console.log(`Git auto-commit: ${config.gitCommit ? 'enabled' : 'disabled'}`);
 	console.log(`Prompt file: ${config.promptFile}`);
+	if (config.continueMode) {
+		console.log(`Continue mode: enabled (prompt: "${config.continuePrompt}")`);
+	}
 
 	await ensureDirectories(config.issuesDir, config.faqDir);
 
@@ -434,7 +463,14 @@ async function main(): Promise<void> {
 
 		const currentIssue = openIssues[0]!;
 
-		await runAgent(promptTemplate, config.issuesDir, config.faqDir, currentIssue);
+		await runAgent({
+			template: promptTemplate,
+			issuesDir: config.issuesDir,
+			faqDir: config.faqDir,
+			issueFile: currentIssue,
+			continueMode: config.continueMode,
+			continuePrompt: config.continuePrompt,
+		});
 
 		// Auto-commit if enabled and there's a current issue
 		if (config.gitCommit && currentIssue) {
