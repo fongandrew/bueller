@@ -5,7 +5,7 @@
 	"type": "module",
 	"main": "dist/index.js",
 	"bin": {
-		"bueller-wheel": "./dist/index.js"
+		"bueller-wheel": "dist/index.js"
 	},
 	"scripts": {
 		"build": "rm -rf dist out && tsc && mkdir -p dist && cp out/src/index.js dist/index.js && echo '#!/usr/bin/env node' | cat - dist/index.js > dist/index.tmp && mv dist/index.tmp dist/index.js && chmod +x dist/index.js",
@@ -30,7 +30,7 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/fongandrew/bueller-wheel.git"
+		"url": "git+https://github.com/fongandrew/bueller-wheel.git"
 	},
 	"bugs": {
 		"url": "https://github.com/fongandrew/bueller-wheel/issues"
