@@ -1,6 +1,6 @@
 # Bueller Wheel
 
-A headless Claude Code issue processor that runs in a loop and resolves issues or tickets written in markdown
+A headless Claude Code issue processor that runs in a loop and resolves issues or ticket files written in markdown
 
 ## Quick Start
 
@@ -15,16 +15,14 @@ npx bueller-wheel
 
 ## Why?
 
-Claude Code agents work better when they focus on one thing at a time. Bueller Wheel helps defer context until it's needed through two mechanisms:
+You want Claude Code to autonomously work on a large pile of issues while you eat lunch and watch a baseball game. Bueller Wheel helps tackle several issues you might encounter:
 
-**Issues as directory-based threads** - Each task becomes a reviewable conversation stored as markdown that gets moved along a file-based "kanban" board. This solves a few problems:
-- **Code review**: When Claude burns through multiple tasks, it's hard to know what happened. The issues structure creates discrete, reviewable units of work.
-- **Iteration without re-prompting**: Markdown files are structured as a back-and-forth between you and Claude, which lets you append follow-ups naturally without starting over.
-- **Human-editable prompts**: Storing issues as simple markdown (not JSON or a database) makes it easy to edit, append, or retroactively clean up conversations to improve prompting.
+- **Claude stops processing after a few issues**: Claude Code tends to stop processing after completing a few tasks. Bueller Wheel keeps prompting Claude Code to work until all of the issues have been resolved.
+- **Claude forgets what it's doing**: As Claude Code uses up its context window, it tends to forget what it was working on. Bueller Wheel runs Claude Code with a fresh context window and prompt for each issue.
+- **You forget what Claude was doing**: If you successfully get Claude Code to work on a large number of tasks, you end up with a pile of code to review. Bueller Wheel structures each issue as a discrete reviewable chunk of work, in a format amenable to multiple iterations of feedback between you and Claude.
+- **Claude keeps making the same mistakes**: A Claude that forgets its history is doomed to repeat it. Bueller Wheel sets up an FAQ directory for Claude to speed up resolution of frequent pitfalls.
 
-**FAQ system** - Common mistakes get documented once, then referenced automatically. Instead of repeating corrections or watching Claude make the same errors over and over, capture solutions in FAQ files that the agent checks when stuck.
-
-**Note:** Bueller Wheel is not a full-fledged task management system. It has no concept of assignment or dependency apart from linear file ordering. The sweet spot for this tool is **solo developers working on a single branch**, but you can make [parallel branches and agents](#working-with-multiple-branches) work.
+**Note**: Bueller Wheel is not a full-fledged task management system. It has no concept of assignment or dependency apart from linear file ordering. The sweet spot for this tool is **solo developers working on a single branch**. That said, you can make [parallel branches and agents](#working-with-multiple-branches) work.
 
 ## How It Works
 
