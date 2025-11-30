@@ -6,7 +6,7 @@ A simple wrapper that runs Claude Code in a headless loop to process issues from
 
 1. Install `@anthropic-ai/claude-agent-sdk` using `npm` or your package manager of choice.
 2. Copy [dist/bueller.js](dist/bueller.js) to the root directory of rour repo. Make it executable if you need to.
-3. **Create an issue**:
+3. Create an issue:
    ```bash
    mkdir -p issues/open
    echo "@user: Please create a test file with 'Hello World'" > issues/open/p0-100-my-task.md
