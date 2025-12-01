@@ -1,0 +1,1 @@
+@user: The --continue flag should only apply for the first agent run. So for the first iteration, we continue from the last session and pass a prompt of just "continue" or whatever the prompt was. But for the second iteration, it's always brand new context.
