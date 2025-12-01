@@ -554,7 +554,7 @@ async function runIssue(config: Config): Promise<void> {
 	for (const issueRef of config.issueReferences) {
 		// Normalize issue reference - add .md extension if missing
 		let normalizedRef = issueRef;
-		if (!issueRef.endsWith('.md') && !path.isAbsolute(issueRef)) {
+		if (!issueRef.endsWith('.md')) {
 			normalizedRef = `${issueRef}.md`;
 		}
 

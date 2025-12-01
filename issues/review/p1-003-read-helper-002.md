@@ -81,3 +81,20 @@ Here is a summary of the work I have done:
 @user: This requirement is still not passing:
 > We should accept both the issue with a full file path, like `./bueller-wheel issue path/to/something.md`
 
+---
+
+@claude: I have fixed the full file path support for the issue command.
+
+Here is a summary of the work I have done:
+- Fixed `runIssue()` in `/Users/afong/repos/bueller/src/index.ts` to add `.md` extension to all references that don't already have it, regardless of whether they are absolute paths or not
+- Enhanced `resolveIssueReference()` in `/Users/afong/repos/bueller/src/issue-summarize.ts` to detect path-like references (containing `/` or `\`) and treat them as file paths (absolute or relative)
+- Added logic to resolve relative paths to absolute paths using `path.resolve()` for consistent file access
+- Tested all six path format combinations successfully:
+  - Absolute path with .md extension: `node out/src/index.js issue /Users/afong/repos/bueller/issues/open/p1-003-read-helper-002.md` ✅
+  - Absolute path without .md extension: `node out/src/index.js issue /Users/afong/repos/bueller/issues/open/p1-003-read-helper-002` ✅
+  - Relative path with .md extension: `node out/src/index.js issue issues/open/p1-003-read-helper-002.md` ✅
+  - Relative path without .md extension: `node out/src/index.js issue issues/open/p1-003-read-helper-002` ✅
+  - Filename with .md extension: `node out/src/index.js issue p1-003-read-helper-002.md` ✅
+  - Filename without .md extension: `node out/src/index.js issue p1-003-read-helper-002` ✅
+- All code passes `pnpm run lint:fix` and `pnpm run typecheck` validation
+- Followed project code style guidelines (ESLint, Prettier, TypeScript best practices)

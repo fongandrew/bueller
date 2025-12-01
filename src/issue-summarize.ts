@@ -101,21 +101,23 @@ export async function resolveIssueReference(
 	reference: string,
 	issuesDir: string,
 ): Promise<LocatedIssue | null> {
-	// Check if it's an absolute path
-	if (path.isAbsolute(reference)) {
+	// Check if it looks like a path (contains path separators)
+	if (reference.includes('/') || reference.includes('\\')) {
+		// Treat as a file path (absolute or relative)
+		const absolutePath = path.isAbsolute(reference) ? reference : path.resolve(reference);
 		try {
-			await fs.access(reference);
+			await fs.access(absolutePath);
 			// Determine status from path
 			let status: IssueStatus = 'open';
-			if (reference.includes('/review/')) {
+			if (absolutePath.includes('/review/')) {
 				status = 'review';
-			} else if (reference.includes('/stuck/')) {
+			} else if (absolutePath.includes('/stuck/')) {
 				status = 'stuck';
 			}
 			return {
-				filePath: reference,
+				filePath: absolutePath,
 				status,
-				filename: path.basename(reference),
+				filename: path.basename(absolutePath),
 			};
 		} catch {
 			return null;
