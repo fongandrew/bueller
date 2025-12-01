@@ -77,9 +77,9 @@ if (!result.output.includes('--foobar')) {
 	throw new Error('FAIL: Output should mention the unrecognized flag "--foobar"');
 }
 
-// Output should contain help text (check for "Usage:" which is in the help text)
-if (!result.output.includes('Usage:')) {
-	throw new Error('FAIL: Output should contain help text (Usage:)');
+// Output should contain help text (check for "USAGE:" which is in the help text)
+if (!result.output.includes('USAGE:')) {
+	throw new Error('FAIL: Output should contain help text (USAGE:)');
 }
 
 // Test 2: Also test with a different unrecognized flag to ensure it's general
@@ -135,7 +135,7 @@ if (helpResult.exitCode !== 0) {
 	throw new Error(`FAIL: --help should exit with code 0, got ${helpResult.exitCode}`);
 }
 
-if (!helpResult.output.includes('Usage:')) {
+if (!helpResult.output.includes('USAGE:')) {
 	throw new Error('FAIL: --help output should contain help text');
 }
 
