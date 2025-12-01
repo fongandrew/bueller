@@ -20,16 +20,20 @@ function showHelp() {
 Bueller - Headless Claude Code Issue Processor
 
 USAGE:
-  bueller [OPTIONS]
+  bueller --run [OPTIONS]             Start the agent loop
+  bueller --git [OPTIONS]             Start with auto-commit enabled
+  bueller --max N [OPTIONS]           Start with max N iterations
+  bueller --continue [PROMPT]         Continue from previous session
 
 OPTIONS:
   --help              Show this help message and exit
+  --run               Explicitly start the agent loop with defaults
+  --git               Enable automatic git commits and start the loop
+  --max N             Maximum number of iterations to run (default: 25)
+  --continue [PROMPT] Continue from previous session (default prompt: "continue")
   --issues-dir DIR    Directory containing issue queue (default: ./issues)
   --faq-dir DIR       Directory containing FAQ/troubleshooting guides (default: ./faq)
-  --max-iterations N  Maximum number of iterations to run (default: 25)
-  --git, --git-commit Enable automatic git commits after each iteration
   --prompt FILE       Custom prompt template file (default: ./issues/prompt.md)
-  --continue [PROMPT] Continue from previous session (default prompt: "continue")
 
 DIRECTORY STRUCTURE:
   issues/
@@ -48,10 +52,11 @@ ISSUE FILE FORMAT:
     p2: Non-blocking follow-up
 
 EXAMPLES:
-  bueller
-  bueller --issues-dir ./my-issues --faq-dir ./my-faq
-  bueller --max-iterations 50 --git-commit
-  bueller --prompt ./custom-prompt.md
+  bueller --run
+  bueller --git
+  bueller --max 50
+  bueller --continue "fix the bug"
+  bueller --run --issues-dir ./my-issues --faq-dir ./my-faq
 
 For more information, visit: https://github.com/anthropics/bueller
 `);
@@ -63,6 +68,29 @@ function parseArgs() {
         showHelp();
         process.exit(0);
     }
+    // Define recognized flags
+    const recognizedFlags = new Set([
+        '--issues-dir',
+        '--faq-dir',
+        '--max',
+        '--git',
+        '--prompt',
+        '--continue',
+        '--run',
+        '--help',
+        '-h',
+    ]);
+    // Check for unrecognized flags
+    for (const arg of args) {
+        // Check if this looks like a flag (starts with -)
+        if (arg.startsWith('-')) {
+            if (!recognizedFlags.has(arg)) {
+                console.error(`${colors.red}Error: Unrecognized flag: ${arg}${colors.reset}\n`);
+                showHelp();
+                process.exit(1);
+            }
+        }
+    }
     let issuesDir = './issues';
     let faqDir = './faq';
     let maxIterations = 25;
@@ -70,6 +98,7 @@ function parseArgs() {
     let promptFile = path.join('./issues', 'prompt.md');
     let continueMode = false;
     let continuePrompt = 'continue';
+    let shouldRun = false;
     for (let i = 0; i < args.length; i++) {
         if (args[i] === '--issues-dir' && i + 1 < args.length) {
             issuesDir = args[++i];
@@ -81,22 +110,34 @@ function parseArgs() {
         else if (args[i] === '--faq-dir' && i + 1 < args.length) {
             faqDir = args[++i];
         }
-        else if (args[i] === '--max-iterations' && i + 1 < args.length) {
+        else if (args[i] === '--max' && i + 1 < args.length) {
             maxIterations = parseInt(args[++i], 10);
+            shouldRun = true;
         }
-        else if (args[i] === '--git' || args[i] === '--git-commit') {
+        else if (args[i] === '--git') {
             gitCommit = true;
+            shouldRun = true;
         }
         else if (args[i] === '--prompt' && i + 1 < args.length) {
             promptFile = args[++i];
         }
         else if (args[i] === '--continue') {
             continueMode = true;
+            shouldRun = true;
             // Check if next arg exists and doesn't start with --
             if (i + 1 < args.length && !args[i + 1].startsWith('--')) {
                 continuePrompt = args[++i];
             }
         }
+        else if (args[i] === '--run') {
+            shouldRun = true;
+        }
+    }
+    // If no run flags are provided, show help and exit
+    if (!shouldRun) {
+        console.error(`${colors.red}Error: No run command specified. Use --run, --git, --max, or --continue to start the agent loop.${colors.reset}\n`);
+        showHelp();
+        process.exit(1);
     }
     return {
         issuesDir,
@@ -106,6 +147,7 @@ function parseArgs() {
         promptFile,
         continueMode,
         continuePrompt,
+        shouldRun,
     };
 }
 async function ensureDirectories(issuesDir, faqDir) {
@@ -314,11 +356,15 @@ function logToolUse(block) {
         case 'grep': {
             const pattern = block.input?.pattern;
             const glob = block.input?.glob;
+            const path = block.input?.path;
             if (pattern) {
                 process.stdout.write(`${pattern}`);
             }
             if (glob) {
                 process.stdout.write(` (${glob})`);
+            }
+            if (path) {
+                process.stdout.write(` (${path})`);
             }
             break;
         }

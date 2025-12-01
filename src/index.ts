@@ -90,6 +90,31 @@ function parseArgs(): Config {
 		process.exit(0);
 	}
 
+	// Define recognized flags
+	const recognizedFlags = new Set([
+		'--issues-dir',
+		'--faq-dir',
+		'--max',
+		'--git',
+		'--prompt',
+		'--continue',
+		'--run',
+		'--help',
+		'-h',
+	]);
+
+	// Check for unrecognized flags
+	for (const arg of args) {
+		// Check if this looks like a flag (starts with -)
+		if (arg.startsWith('-')) {
+			if (!recognizedFlags.has(arg)) {
+				console.error(`${colors.red}Error: Unrecognized flag: ${arg}${colors.reset}\n`);
+				showHelp();
+				process.exit(1);
+			}
+		}
+	}
+
 	let issuesDir = './issues';
 	let faqDir = './faq';
 	let maxIterations = 25;
