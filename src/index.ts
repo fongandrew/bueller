@@ -537,12 +537,15 @@ async function main(): Promise<void> {
 
 		const currentIssue = openIssues[0]!;
 
+		// Only use continue mode on the first iteration
+		const isFirstIteration = iteration === 1;
+
 		await runAgent({
 			template: promptTemplate,
 			issuesDir: config.issuesDir,
 			faqDir: config.faqDir,
 			issueFile: currentIssue,
-			continueMode: config.continueMode,
+			continueMode: config.continueMode && isFirstIteration,
 			continuePrompt: config.continuePrompt,
 		});
 
