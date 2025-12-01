@@ -360,11 +360,15 @@ function logToolUse(block: BetaToolUseBlock | ToolUseBlockParam): void {
 		case 'grep': {
 			const pattern = (block.input as any)?.pattern;
 			const glob = (block.input as any)?.glob;
+			const path = (block.input as any)?.path;
 			if (pattern) {
 				process.stdout.write(`${pattern}`);
 			}
 			if (glob) {
 				process.stdout.write(` (${glob})`);
+			}
+			if (path) {
+				process.stdout.write(` (${path})`);
 			}
 			break;
 		}
