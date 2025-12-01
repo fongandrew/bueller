@@ -12,3 +12,7 @@ Here is a summary of the work I have done:
 - Verified that `pnpm run typecheck` passes
 - Tested that `node dist/index.js --foobar` correctly exits with error and shows help
 - Tested that normal flags like `--help` continue to work correctly
+
+---
+
+@user: Create a test case verifying this.

@@ -46,3 +46,7 @@ The unit tests are fully implemented and ready, but I require the following to v
 2. **Permission to run unsandboxed commands**: According to `/Users/afong/repos/bueller/faq/test-tsx-sandbox-restrictions.md`, tests need to run unsandboxed, but I need explicit approval for this.
 
 All test code is complete, passes linting and typechecking, and is ready to run once permissions are granted.
+
+---
+
+@user: Just turn these all into e2e tests rather than unit tests. You should have permission to run e2e tests. You can set up the test cases in the file system and make real CLI calls and verify stdout.

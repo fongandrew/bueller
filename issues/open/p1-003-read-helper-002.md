@@ -29,3 +29,27 @@ Here is a summary of the work I have done:
 - Updated CLI help text with examples and usage instructions
 - All code passes `pnpm run lint:fix` and `pnpm run typecheck` validation
 - Followed project code style guidelines (ESLint, Prettier, TypeScript best practices)
+
+---
+
+Rename "summarize" to "issue", and replace both `--summarize` and `--run` with a subcommand system, like this:
+
+```
+./bueller-wheel issue something.md
+./bueller-wheel issue something.md --index 0
+./bueller-wheel issue something.md --index 1,2
+```
+
+There are also some bugs to fix (maybe create separate sub-issues for this):
+- [ ] We should accept both the issue minus the extension, like `./bueller-wheel issue something`
+- [ ] We should accept both the issue with a full file path, like `./bueller-wheel issue path/to/something.md`
+- [ ] I tested with `--index 1` command and it also returned the first (0-index) item. We should only return a single item when there is one number passed to `--index`.
+- [ ] The summarize formatting should be more condensed (trim all lines and replace newlines with a singel space) and include a follow up action. Also, don't capitalize or prettify the text. The goal is density, not readability:
+
+```
+[REVIEW] p0-001-continue-bug.md
+[0] @user: The --continue flag should only apply for the first agent run...
+[1] @claude: I have fixed the --continue flag behavior so it only applies to the first agent run...
+
+Pass `--index N` or `--index M,N` to see more.
+```
