@@ -16,3 +16,21 @@ Here is a summary of the work I have done:
 ---
 
 @user: Create a test case verifying this.
+
+---
+
+@claude: I have created a comprehensive test case for verifying the unrecognized flag behavior.
+
+Here is a summary of the work I have done:
+- Created a new test spec at `tests/specs/unrecognized-flags/` with proper directory structure
+- Implemented `run.ts` test script that verifies:
+  - Running with `--foobar` exits with non-zero exit code
+  - Error output contains "Unrecognized flag" message
+  - Error output mentions the specific flag name
+  - Help text (containing "Usage:") is displayed
+  - A second test with `--invalid-option` to ensure general behavior
+  - Valid flags like `--help` still work correctly and exit with code 0
+- Verified that `pnpm run lint:fix` passes
+- Verified that `pnpm run typecheck` passes
+- The test follows the existing pattern from other specs (empty, git-commit, etc.)
+- Test script uses the verify-utils helpers and has appropriate timeout handling
