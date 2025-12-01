@@ -1,0 +1,316 @@
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
+
+import { type IssueMessage, parseIssueContent } from './issue-reader.js';
+
+/**
+ * Represents the status of an issue based on its location
+ */
+export type IssueStatus = 'open' | 'review' | 'stuck';
+
+/**
+ * Represents a located issue file with its path and status
+ */
+export interface LocatedIssue {
+	/** Absolute path to the issue file */
+	filePath: string;
+	/** Status of the issue */
+	status: IssueStatus;
+	/** Filename without path */
+	filename: string;
+}
+
+/**
+ * Result of summarizing an issue
+ */
+export interface IssueSummary {
+	/** The located issue information */
+	issue: LocatedIssue;
+	/** Array of abbreviated messages */
+	abbreviatedMessages: AbbreviatedMessage[];
+	/** Total count of messages */
+	messageCount: number;
+}
+
+/**
+ * An abbreviated message for display
+ */
+export interface AbbreviatedMessage {
+	/** Original message index */
+	index: number;
+	/** Author of the message */
+	author: 'user' | 'claude';
+	/** Abbreviated content */
+	content: string;
+	/** Whether this message was abbreviated */
+	isAbbreviated: boolean;
+	/** Full content (for expansion) */
+	fullContent: string;
+}
+
+/**
+ * Options for expanding messages
+ */
+export interface ExpandOptions {
+	/** Single index or range to expand */
+	indexSpec?: string;
+}
+
+/**
+ * Searches for an issue file by filename across the issue directories
+ *
+ * @param filename - The issue filename (e.g., "p1-003-read-helper-002.md")
+ * @param issuesDir - Base issues directory
+ * @returns Located issue or null if not found
+ */
+export async function locateIssueFile(
+	filename: string,
+	issuesDir: string,
+): Promise<LocatedIssue | null> {
+	const directories: { dir: string; status: IssueStatus }[] = [
+		{ dir: path.join(issuesDir, 'open'), status: 'open' },
+		{ dir: path.join(issuesDir, 'review'), status: 'review' },
+		{ dir: path.join(issuesDir, 'stuck'), status: 'stuck' },
+	];
+
+	for (const { dir, status } of directories) {
+		const filePath = path.join(dir, filename);
+		try {
+			await fs.access(filePath);
+			return {
+				filePath,
+				status,
+				filename,
+			};
+		} catch {
+			// File doesn't exist in this directory, continue searching
+		}
+	}
+
+	return null;
+}
+
+/**
+ * Resolves an issue reference (either a full path or filename) to a located issue
+ *
+ * @param reference - File path or filename
+ * @param issuesDir - Base issues directory
+ * @returns Located issue or null if not found
+ */
+export async function resolveIssueReference(
+	reference: string,
+	issuesDir: string,
+): Promise<LocatedIssue | null> {
+	// Check if it's an absolute path
+	if (path.isAbsolute(reference)) {
+		try {
+			await fs.access(reference);
+			// Determine status from path
+			let status: IssueStatus = 'open';
+			if (reference.includes('/review/')) {
+				status = 'review';
+			} else if (reference.includes('/stuck/')) {
+				status = 'stuck';
+			}
+			return {
+				filePath: reference,
+				status,
+				filename: path.basename(reference),
+			};
+		} catch {
+			return null;
+		}
+	}
+
+	// Otherwise, treat it as a filename and search for it
+	return locateIssueFile(reference, issuesDir);
+}
+
+/**
+ * Abbreviates a message based on its position in the conversation
+ *
+ * @param message - The message to abbreviate
+ * @param _position - Position in conversation ('first', 'middle', or 'last')
+ * @param maxLength - Maximum length for the abbreviated content
+ * @returns Abbreviated message
+ */
+function abbreviateMessage(
+	message: IssueMessage,
+	_position: 'first' | 'middle' | 'last',
+	maxLength: number,
+): AbbreviatedMessage {
+	const fullContent = message.content;
+	let abbreviated = fullContent;
+	let isAbbreviated = false;
+
+	if (fullContent.length > maxLength) {
+		abbreviated = fullContent.substring(0, maxLength) + '...';
+		isAbbreviated = true;
+	}
+
+	return {
+		index: message.index,
+		author: message.author,
+		content: abbreviated,
+		isAbbreviated,
+		fullContent,
+	};
+}
+
+/**
+ * Creates abbreviated messages from a parsed issue
+ *
+ * @param messages - Array of issue messages
+ * @returns Array of abbreviated messages
+ */
+function createAbbreviatedMessages(messages: IssueMessage[]): AbbreviatedMessage[] {
+	if (messages.length === 0) {
+		return [];
+	}
+
+	if (messages.length === 1) {
+		// Single message - use 300 char limit
+		return [abbreviateMessage(messages[0]!, 'first', 300)];
+	}
+
+	const result: AbbreviatedMessage[] = [];
+
+	// First message - 300 chars
+	result.push(abbreviateMessage(messages[0]!, 'first', 300));
+
+	// Middle messages - 80 chars
+	for (let i = 1; i < messages.length - 1; i++) {
+		result.push(abbreviateMessage(messages[i]!, 'middle', 80));
+	}
+
+	// Last message - 300 chars
+	result.push(abbreviateMessage(messages[messages.length - 1]!, 'last', 300));
+
+	return result;
+}
+
+/**
+ * Summarizes an issue file with abbreviated messages
+ *
+ * @param locatedIssue - Located issue information
+ * @returns Issue summary
+ */
+export async function summarizeIssue(locatedIssue: LocatedIssue): Promise<IssueSummary> {
+	const content = await fs.readFile(locatedIssue.filePath, 'utf-8');
+	const parsed = parseIssueContent(content);
+
+	const abbreviatedMessages = createAbbreviatedMessages(parsed.messages);
+
+	return {
+		issue: locatedIssue,
+		abbreviatedMessages,
+		messageCount: parsed.messages.length,
+	};
+}
+
+/**
+ * Parses index specification (e.g., "3" or "1,3")
+ *
+ * @param indexSpec - Index specification string
+ * @returns Array of indices to expand, or null if invalid
+ */
+export function parseIndexSpec(indexSpec: string): number[] | null {
+	const parts = indexSpec.split(',').map((s) => s.trim());
+
+	if (parts.length === 1) {
+		// Single index
+		const index = parseInt(parts[0]!, 10);
+		if (isNaN(index) || index < 0) {
+			return null;
+		}
+		return [index];
+	}
+
+	if (parts.length === 2) {
+		// Range
+		const start = parseInt(parts[0]!, 10);
+		const end = parseInt(parts[1]!, 10);
+		if (isNaN(start) || isNaN(end) || start < 0 || end < start) {
+			return null;
+		}
+		const indices: number[] = [];
+		for (let i = start; i <= end; i++) {
+			indices.push(i);
+		}
+		return indices;
+	}
+
+	return null;
+}
+
+/**
+ * Expands specific messages in a summary based on index specification
+ *
+ * @param summary - Issue summary
+ * @param indexSpec - Index specification (e.g., "3" or "1,3")
+ * @returns New summary with expanded messages
+ */
+export function expandMessages(summary: IssueSummary, indexSpec: string): IssueSummary {
+	const indices = parseIndexSpec(indexSpec);
+	if (!indices) {
+		return summary;
+	}
+
+	const expandedMessages = summary.abbreviatedMessages.map((msg) => {
+		if (indices.includes(msg.index)) {
+			return {
+				...msg,
+				content: msg.fullContent,
+				isAbbreviated: false,
+			};
+		}
+		return msg;
+	});
+
+	return {
+		...summary,
+		abbreviatedMessages: expandedMessages,
+	};
+}
+
+/**
+ * Formats an issue summary for console output
+ *
+ * @param summary - Issue summary
+ * @param options - Formatting options
+ * @returns Formatted string
+ */
+export function formatIssueSummary(
+	summary: IssueSummary,
+	options?: { showFilePath?: boolean },
+): string {
+	const lines: string[] = [];
+
+	// Header
+	const statusBadge = `[${summary.issue.status.toUpperCase()}]`;
+	const filename = summary.issue.filename;
+	lines.push(`${statusBadge} ${filename}`);
+
+	if (options?.showFilePath) {
+		lines.push(`  Path: ${summary.issue.filePath}`);
+	}
+
+	lines.push(`  Messages: ${summary.messageCount}`);
+	lines.push('');
+
+	// Messages
+	for (const msg of summary.abbreviatedMessages) {
+		const author = msg.author === 'user' ? 'User' : 'Claude';
+		const abbrevMarker = msg.isAbbreviated ? ' [abbreviated]' : '';
+		lines.push(`  [${msg.index}] @${author}${abbrevMarker}:`);
+
+		// Indent message content
+		const contentLines = msg.content.split('\n');
+		for (const line of contentLines) {
+			lines.push(`    ${line}`);
+		}
+		lines.push('');
+	}
+
+	return lines.join('\n');
+}

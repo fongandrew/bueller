@@ -6,6 +6,13 @@ import { query, type SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import { type ToolUseBlockParam } from '@anthropic-ai/sdk/resources';
 import { type BetaToolUseBlock } from '@anthropic-ai/sdk/resources/beta.mjs';
 
+import {
+	expandMessages,
+	formatIssueSummary,
+	resolveIssueReference,
+	summarizeIssue,
+} from './issue-summarize.js';
+
 // Colors for output
 const colors = {
 	red: '\x1b[0;31m',
@@ -29,6 +36,9 @@ interface Config {
 	continueMode: boolean;
 	continuePrompt: string;
 	shouldRun: boolean;
+	summarizeMode: boolean;
+	summarizeIssues: string[];
+	summarizeIndex: string | undefined;
 }
 
 interface RunAgentOptions {
@@ -49,6 +59,7 @@ USAGE:
   bueller --git [OPTIONS]             Start with auto-commit enabled
   bueller --max N [OPTIONS]           Start with max N iterations
   bueller --continue [PROMPT]         Continue from previous session
+  bueller --summarize ISSUE...        Summarize one or more issues
 
 OPTIONS:
   --help              Show this help message and exit
@@ -56,6 +67,9 @@ OPTIONS:
   --git               Enable automatic git commits and start the loop
   --max N             Maximum number of iterations to run (default: 25)
   --continue [PROMPT] Continue from previous session (default prompt: "continue")
+  --summarize ISSUE   Summarize issue(s) - accepts file paths or filenames
+  --index N           Expand message at index N (use with --summarize)
+  --index M,N         Expand message range from M to N (use with --summarize)
   --issues-dir DIR    Directory containing issue queue (default: ./issues)
   --faq-dir DIR       Directory containing FAQ/troubleshooting guides (default: ./faq)
   --prompt FILE       Custom prompt template file (default: ./issues/prompt.md)
@@ -82,6 +96,9 @@ EXAMPLES:
   bueller --max 50
   bueller --continue "fix the bug"
   bueller --run --issues-dir ./my-issues --faq-dir ./my-faq
+  bueller --summarize p1-003-read-helper-002.md
+  bueller --summarize p1-003.md p2-005.md --index 1
+  bueller --summarize /path/to/issue.md --index 0,2
 
 For more information, visit: https://github.com/anthropics/bueller
 `);
@@ -105,6 +122,8 @@ function parseArgs(): Config {
 		'--prompt',
 		'--continue',
 		'--run',
+		'--summarize',
+		'--index',
 		'--help',
 		'-h',
 	]);
@@ -129,6 +148,9 @@ function parseArgs(): Config {
 	let continueMode = false;
 	let continuePrompt = 'continue';
 	let shouldRun = false;
+	let summarizeMode = false;
+	const summarizeIssues: string[] = [];
+	let summarizeIndex: string | undefined;
 
 	for (let i = 0; i < args.length; i++) {
 		if (args[i] === '--issues-dir' && i + 1 < args.length) {
@@ -156,13 +178,30 @@ function parseArgs(): Config {
 			}
 		} else if (args[i] === '--run') {
 			shouldRun = true;
+		} else if (args[i] === '--summarize') {
+			summarizeMode = true;
+			// Collect all following non-flag arguments as issue references
+			while (i + 1 < args.length && !args[i + 1]!.startsWith('--')) {
+				summarizeIssues.push(args[++i]!);
+			}
+		} else if (args[i] === '--index' && i + 1 < args.length) {
+			summarizeIndex = args[++i]!;
 		}
 	}
 
-	// If no run flags are provided, show help and exit
-	if (!shouldRun) {
+	// If no run flags are provided and not in summarize mode, show help and exit
+	if (!shouldRun && !summarizeMode) {
 		console.error(
-			`${colors.red}Error: No run command specified. Use --run, --git, --max, or --continue to start the agent loop.${colors.reset}\n`,
+			`${colors.red}Error: No command specified. Use --run, --git, --max, --continue, or --summarize.${colors.reset}\n`,
+		);
+		showHelp();
+		process.exit(1);
+	}
+
+	// Validate summarize mode
+	if (summarizeMode && summarizeIssues.length === 0) {
+		console.error(
+			`${colors.red}Error: --summarize requires at least one issue reference.${colors.reset}\n`,
 		);
 		showHelp();
 		process.exit(1);
@@ -177,6 +216,9 @@ function parseArgs(): Config {
 		continueMode,
 		continuePrompt,
 		shouldRun,
+		summarizeMode,
+		summarizeIssues,
+		summarizeIndex,
 	};
 }
 
@@ -500,8 +542,44 @@ async function runAgent(options: RunAgentOptions): Promise<void> {
 	console.log(`${colors.blue}\n--- Agent finished ---${colors.reset}`);
 }
 
+async function runSummarize(config: Config): Promise<void> {
+	console.log(`${colors.cyan}Summarizing issues...${colors.reset}\n`);
+
+	for (const issueRef of config.summarizeIssues) {
+		const located = await resolveIssueReference(issueRef, config.issuesDir);
+
+		if (!located) {
+			console.error(`${colors.red}Error: Could not find issue: ${issueRef}${colors.reset}\n`);
+			continue;
+		}
+
+		try {
+			let summary = await summarizeIssue(located);
+
+			// Apply index expansion if specified
+			if (config.summarizeIndex) {
+				summary = expandMessages(summary, config.summarizeIndex);
+			}
+
+			const formatted = formatIssueSummary(summary, { showFilePath: true });
+			console.log(formatted);
+			console.log('---\n');
+		} catch (error) {
+			console.error(
+				`${colors.red}Error summarizing ${issueRef}: ${String(error)}${colors.reset}\n`,
+			);
+		}
+	}
+}
+
 async function main(): Promise<void> {
 	const config = parseArgs();
+
+	// Handle summarize mode
+	if (config.summarizeMode) {
+		await runSummarize(config);
+		return;
+	}
 
 	console.log(`${colors.cyan}Bueller? Bueller?${colors.reset}`);
 	console.log(`${colors.cyan}-----------------${colors.reset}`);
