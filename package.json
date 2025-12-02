@@ -1,6 +1,6 @@
 {
 	"name": "bueller-wheel",
-	"version": "0.3.0",
+	"version": "0.3.1",
 	"description": "Headless Claude Code issue processor - A wrapper that runs Claude Code in a loop to process issues from a directory queue",
 	"type": "module",
 	"main": "dist/index.js",
@@ -8,7 +8,7 @@
 		"bueller-wheel": "dist/index.js"
 	},
 	"scripts": {
-		"build": "rm -rf dist out && tsc && mkdir -p dist && cp out/src/index.js dist/index.js && echo '#!/usr/bin/env node' | cat - dist/index.js > dist/index.tmp && mv dist/index.tmp dist/index.js && chmod +x dist/index.js",
+		"build": "rm -rf dist out && tsc && mkdir -p dist && cp out/src/*.js dist/ && echo '#!/usr/bin/env node' | cat - dist/index.js > dist/index.tmp && mv dist/index.tmp dist/index.js && chmod +x dist/index.js",
 		"dev": "tsx src/index.ts",
 		"start": "node dist/index.js",
 		"test": "tsx tests/test-runner.ts",
@@ -37,7 +37,7 @@
 	},
 	"homepage": "https://github.com/fongandrew/bueller-wheel#readme",
 	"files": [
-		"dist/index.js",
+		"dist/*.js",
 		"README.md",
 		"LICENSE"
 	],
