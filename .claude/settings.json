@@ -3,10 +3,8 @@
     "allow": [
       "Bash(pnpm run dev:*)",
       "Bash(pnpm test:*)",
+      "Bash(pnpm run test:*)",
       "Bash(npx bueller-wheel:*)"
-    ],
-    "ask": [
-      "Edit(package.json)"
     ],
     "defaultMode": "acceptEdits"
   },
