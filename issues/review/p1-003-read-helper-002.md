@@ -105,3 +105,15 @@ Here is a summary of the work I have done:
 
 Make sure tests (`pnpm run test`) pass and fix tests as needed.
 
+
+---
+
+@claude: I have adjusted the truncation limits as requested.
+
+Here is a summary of the work I have done:
+- Updated character limits in `/Users/afong/repos/bueller/src/issue-summarize.ts`:
+  - First/last messages: 300 chars → 230 chars
+  - Middle messages: 80 chars → 70 chars
+  - Single message case: 300 chars → 230 chars
+- All code passes `pnpm run lint:fix` and `pnpm run typecheck` validation
+- All tests pass (`pnpm run test`) - 5/5 tests passed

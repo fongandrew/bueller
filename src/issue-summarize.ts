@@ -171,22 +171,22 @@ function createAbbreviatedMessages(messages: IssueMessage[]): AbbreviatedMessage
 	}
 
 	if (messages.length === 1) {
-		// Single message - use 300 char limit
-		return [abbreviateMessage(messages[0]!, 'first', 300)];
+		// Single message - use 230 char limit
+		return [abbreviateMessage(messages[0]!, 'first', 230)];
 	}
 
 	const result: AbbreviatedMessage[] = [];
 
-	// First message - 300 chars
-	result.push(abbreviateMessage(messages[0]!, 'first', 300));
+	// First message - 230 chars
+	result.push(abbreviateMessage(messages[0]!, 'first', 230));
 
-	// Middle messages - 80 chars
+	// Middle messages - 70 chars
 	for (let i = 1; i < messages.length - 1; i++) {
-		result.push(abbreviateMessage(messages[i]!, 'middle', 80));
+		result.push(abbreviateMessage(messages[i]!, 'middle', 70));
 	}
 
-	// Last message - 300 chars
-	result.push(abbreviateMessage(messages[messages.length - 1]!, 'last', 300));
+	// Last message - 230 chars
+	result.push(abbreviateMessage(messages[messages.length - 1]!, 'last', 230));
 
 	return result;
 }

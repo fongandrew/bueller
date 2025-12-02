@@ -18,11 +18,11 @@ const ISSUE_DIR_REVIEW = 'review';
 const ISSUE_DIR_STUCK = 'stuck';
 function showHelp() {
     console.log(`
-Bueller - Headless Claude Code Issue Processor
+Bueller Wheel - Headless Claude Code Issue Processor
 
 USAGE:
-  bueller run [OPTIONS]               Start the agent loop
-  bueller issue ISSUE... [OPTIONS]    View issue summaries
+  bueller-wheel run [OPTIONS]               Start the agent loop
+  bueller-wheel issue ISSUE... [OPTIONS]    View issue summaries
 
 COMMANDS:
   run                 Start the agent loop to process issues
@@ -57,14 +57,14 @@ ISSUE FILE FORMAT:
     p2: Non-blocking follow-up
 
 EXAMPLES:
-  bueller run
-  bueller run --no-git
-  bueller run --max 50
-  bueller run --continue "fix the bug"
-  bueller run --issues-dir ./my-issues --faq-dir ./my-faq
-  bueller issue p1-003-read-helper-002.md
-  bueller issue p1-003 p2-005 --index 1
-  bueller issue /path/to/issue.md --index 0,2
+  bueller-wheel run
+  bueller-wheel run --no-git
+  bueller-wheel run --max 50
+  bueller-wheel run --continue "fix the bug"
+  bueller-wheel run --issues-dir ./my-issues --faq-dir ./my-faq
+  bueller-wheel issue p1-003-read-helper-002.md
+  bueller-wheel issue p1-003 p2-005 --index 1
+  bueller-wheel issue /path/to/issue.md --index 0,2
 
 For more information, visit: https://github.com/anthropics/bueller
 `);
@@ -282,6 +282,9 @@ Here is a summary of the work I have done:
 
 Your issue file: [ISSUE_FILE_PATH]
 
+- To summarize: \`npx bueller-wheel issue [ISSUE_FILE_PATH]\`
+- To expand: \`npx bueller-wheel issue [ISSUE_FILE_PATH] --index <start>,<end>\`
+
 1. **Read the issue**: Parse the conversation history in [ISSUE_FILE_PATH] to understand the task
 2. **Work on the task**: Do what the issue requests. When encountering issues, always check for a relevant guide in [FAQ_DIR]/ first.
 3. **Verify**: Verify the following pass:
@@ -330,17 +333,9 @@ Your issue file: [ISSUE_FILE_PATH]
 
 **Critical:** ALWAYS check the FAQ directory ([FAQ_DIR]/) to see if there is a guide when you encounter a problem.
 
-## Helpful Commands
+## Adding to the FAQ
 
-If you need to quickly review an issue's conversation history, you can use the \`issue\` command:
-
-\`\`\`bash
-bueller-wheel issue [ISSUE_FILE]
-bueller-wheel issue [ISSUE_FILE] --index N        # Expand message at index N
-bueller-wheel issue [ISSUE_FILE] --index M,N      # Expand messages from M to N
-\`\`\`
-
-This displays an abbreviated summary of the issue, showing the first/last messages at 300 characters and middle messages at 80 characters. You can use either full file paths or just filenames (it will search across open/, review/, and stuck/ directories).
+Consider adding a **CONCISE** FAQ in [FAQ_DIR]/ for non-obvious solutions, recurring issues, or multi-step troubleshooting that would help future agents. Skip trivial/one-off problems or topics already documented.
 
 Now, please process the issue at [ISSUE_FILE_PATH].`;
 }
