@@ -45,6 +45,8 @@ Here is a summary of the work I have done:
 ## Your Task for This Iteration
 
 Your issue file: [ISSUE_FILE_PATH]
+
+Issue files may be long. Use CLI commands to read:
 - To summarize: `npx bueller-wheel issue [ISSUE_FILE_PATH]`
 - To expand: `npx bueller-wheel issue [ISSUE_FILE_PATH] --index <start>,<end>`
 
@@ -97,7 +99,7 @@ Consider adding a **CONCISE** FAQ in [FAQ_DIR]/ for non-obvious solutions, recur
 - Be thoughtful about when to CONTINUE vs COMPLETE - don't leave trivial tasks incomplete
 - When creating child issues, make each one focused and actionable
 - Use bash commands (mv, cat, echo) to manage files - you have full filesystem access
-- You are building `bueller-wheel` itself, so in dev, replace calls to `npx bueller-wheel` to `pnpm run dev` (or, in tests, to the built `index.js` file)
+- You are building `bueller-wheel` itself, so in dev, replace calls to `npx bueller-wheel` to `pnpm run dev` (for example, `pnpm run dev issue [ISSUE_FILE_PATH]` -- you may have to use an unsandboxed Bash command to read this). In tests, use the built `index.js` file.
 
 **Critical:** ALWAYS check the FAQ directory ([FAQ_DIR]/) to see if there is a guide when you encounter a problem.
 

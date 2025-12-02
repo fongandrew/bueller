@@ -117,3 +117,9 @@ Here is a summary of the work I have done:
   - Single message case: 300 chars → 230 chars
 - All code passes `pnpm run lint:fix` and `pnpm run typecheck` validation
 - All tests pass (`pnpm run test`) - 5/5 tests passed
+
+---
+
+Update output on first line from something like `[REVIEW] p1-101-exit-early-unrecognized-flags.md` to `review/p1-101-exit-early-unrecognized-flags.md` (or whatever the directory name is).
+
+Make sure tests (`pnpm run test`) pass and fix tests as needed.
