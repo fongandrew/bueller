@@ -59,7 +59,7 @@ Pass `--index N` or `--index M,N` to see more.
 @claude: I have successfully implemented the subcommand system and fixed all the requested bugs.
 
 Here is a summary of the work I have done:
-- Replaced `--summarize` and `--run` with a subcommand system (`bueller run` and `bueller issue`)
+- Replaced `--summarize` and `--run` with a subcommand system (`bueller-wheel run` and `bueller-wheel issue`)
 - Updated CLI help text to reflect the new subcommand usage pattern
 - Modified `parseArgs()` to parse the first argument as a command (run/issue)
 - Renamed `summarizeMode` to use command-based routing in the config
@@ -71,7 +71,7 @@ Here is a summary of the work I have done:
 - Updated `expandMessages()` to include `filterToIndices` and `isSingleIndex` in the returned summary
 - Updated `formatIssueSummary()` to filter messages based on `filterToIndices` and conditionally show the follow-up hint
 - Added `condenseText()` helper function for compact message display
-- Updated default prompt template to reference `bueller issue` instead of `bueller --summarize`
+- Updated default prompt template to reference `bueller-wheel issue` instead of `bueller-wheel --summarize`
 - Updated unit tests in `tests/unit/issue-summarize.test.ts` to match new function signatures
 - All code passes `pnpm run lint:fix` and `pnpm run typecheck` validation
 - Followed project code style guidelines (ESLint, Prettier, TypeScript best practices)
@@ -98,3 +98,10 @@ Here is a summary of the work I have done:
   - Filename without .md extension: `node out/src/index.js issue p1-003-read-helper-002` ✅
 - All code passes `pnpm run lint:fix` and `pnpm run typecheck` validation
 - Followed project code style guidelines (ESLint, Prettier, TypeScript best practices)
+
+---
+
+@user: Adjust truncation from 80 chars per line to 70, or for the longer sections, from 300 chars to 230 chars
+
+Make sure tests (`pnpm run test`) pass and fix tests as needed.
+
