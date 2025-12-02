@@ -1,18 +1,13 @@
 import { execSync } from 'node:child_process';
-import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { pass } from '../../verify-utils.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const projectRoot = path.resolve(__dirname, '../../..');
-const buellerSrc = path.join(projectRoot, 'src/index.ts');
 const issuesDir = './issues';
 
 // Helper function to run bueller issue command
+// Uses the compiled index.js that is copied to the test temp directory
 function runIssueCommand(args: string[]): string {
-	const cmd = `tsx "${buellerSrc}" issue ${args.join(' ')} --issues-dir ${issuesDir}`;
+	const cmd = `node ./index.js issue ${args.join(' ')} --issues-dir ${issuesDir}`;
 	return execSync(cmd, { encoding: 'utf-8' });
 }
 
@@ -22,7 +17,7 @@ const shortOutput = runIssueCommand(['p1-001-short.md']);
 if (!shortOutput.includes('This is a short message that should not be truncated')) {
 	throw new Error('FAIL: Short message was truncated or not found');
 }
-if (shortOutput.includes('...')) {
+if (shortOutput.includes('…')) {
 	throw new Error('FAIL: Short message shows truncation indicator');
 }
 console.log('✓ Short message test passed\n');
@@ -30,7 +25,7 @@ console.log('✓ Short message test passed\n');
 // Test 2: Long single message (truncated at 300 chars)
 console.log('Test 2: Long single message should be truncated at 300 chars');
 const longOutput = runIssueCommand(['p1-002-long-single.md']);
-if (!longOutput.includes('...')) {
+if (!longOutput.includes('…')) {
 	throw new Error('FAIL: Long single message was not truncated');
 }
 // The truncation should include the ellipsis, so the visible part should be around 300 chars
@@ -39,7 +34,7 @@ if (!match || !match[1]) {
 	throw new Error('FAIL: Could not extract message content');
 }
 const messageContent = match[1].trim();
-// Should be around 300 chars + '...' = 303 chars
+// Should be around 300 chars + '…' = 301 chars
 if (messageContent.length > 320) {
 	throw new Error(
 		`FAIL: Truncated message is too long (${messageContent.length} chars, expected ~303)`,
@@ -81,7 +76,7 @@ const msg3 = parseMessage(messageLines[3]!);
 if (msg0.content.length > 320) {
 	throw new Error(`FAIL: First message too long (${msg0.content.length} chars, expected ~303)`);
 }
-if (!msg0.content.includes('...')) {
+if (!msg0.content.includes('…')) {
 	throw new Error('FAIL: First message should be truncated');
 }
 
@@ -89,7 +84,7 @@ if (!msg0.content.includes('...')) {
 if (msg1.content.length > 100) {
 	throw new Error(`FAIL: Middle message 1 too long (${msg1.content.length} chars, expected ~83)`);
 }
-if (!msg1.content.includes('...')) {
+if (!msg1.content.includes('…')) {
 	throw new Error('FAIL: Middle message 1 should be truncated');
 }
 
@@ -97,7 +92,7 @@ if (!msg1.content.includes('...')) {
 if (msg2.content.length > 100) {
 	throw new Error(`FAIL: Middle message 2 too long (${msg2.content.length} chars, expected ~83)`);
 }
-if (!msg2.content.includes('...')) {
+if (!msg2.content.includes('…')) {
 	throw new Error('FAIL: Middle message 2 should be truncated');
 }
 
@@ -105,7 +100,7 @@ if (!msg2.content.includes('...')) {
 if (msg3.content.length > 320) {
 	throw new Error(`FAIL: Last message too long (${msg3.content.length} chars, expected ~303)`);
 }
-if (!msg3.content.includes('...')) {
+if (!msg3.content.includes('…')) {
 	throw new Error('FAIL: Last message should be truncated');
 }
 
@@ -161,7 +156,7 @@ if (msg1Expanded.content.length < 100) {
 }
 
 // Should not have truncation indicator
-if (msg1Expanded.content.includes('...')) {
+if (msg1Expanded.content.includes('…')) {
 	throw new Error('FAIL: Expanded message [1] still has truncation indicator');
 }
 
@@ -206,10 +201,10 @@ if (msg2Range.content.length < 100) {
 }
 
 // Should not have truncation indicators
-if (msg1Range.content.includes('...')) {
+if (msg1Range.content.includes('…')) {
 	throw new Error('FAIL: Message [1] in range still has truncation indicator');
 }
-if (msg2Range.content.includes('...')) {
+if (msg2Range.content.includes('…')) {
 	throw new Error('FAIL: Message [2] in range still has truncation indicator');
 }
 

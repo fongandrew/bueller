@@ -39,15 +39,15 @@ export async function runBueller(options: RunBuellerOptions = {}): Promise<{
 		additionalArgs = [],
 	} = options;
 
-	// Check if any run flag is already in additionalArgs
-	const hasRunFlag = additionalArgs.some((arg) =>
-		['--run', '--git', '--continue', '--max'].includes(arg),
+	// Check if any command is already in additionalArgs (run, issue, or run-related flags)
+	const hasCommand = additionalArgs.some((arg) =>
+		['run', 'issue', '--git', '--continue', '--max'].includes(arg),
 	);
 
 	const args = [
 		'./index.js',
-		// Only add --run if no other run flag is present
-		...(hasRunFlag ? [] : ['--run']),
+		// Only add 'run' if no other command is present
+		...(hasCommand ? [] : ['run']),
 		'--issues-dir',
 		issuesDir,
 		'--max',
